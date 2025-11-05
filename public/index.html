@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Messenger</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="login-modal hidden">
+        <div class="login-content">
+            <h2>Join Video Chat</h2>
+            <p class="login-subtitle">Enter the password to connect with others</p>
+            <div class="login-form">
+                <input type="text" id="usernameInput" placeholder="Your name (optional)" class="login-input">
+                <input type="password" id="passwordInput" placeholder="Password: Yahoo" class="login-input">
+                <button id="loginBtn" class="btn-login">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remote Video Preview - Top Left -->
+    <div class="remote-video-frame hidden" id="remoteVideoFrame">
+        <div class="video-frame remote">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div class="frame-overlay"></div>
+            <div class="video-label">Remote User</div>
+        </div>
+    </div>
+
+    <!-- Connection Status Indicator -->
+    <div id="connectionStatus" class="connection-status">
+        <div class="status-dot disconnected"></div>
+        <span class="status-text">Not Connected</span>
+    </div>
+
+    <!-- Draggable UI Container -->
+    <div class="draggable-ui-container" id="draggableUI">
+        <!-- Circular Video Preview - Bottom Right -->
+        <div class="video-preview-dock" id="videoPreviewDock">
+            <div class="video-frame">
+                <video id="preview" autoplay muted playsinline></video>
+                <canvas id="effectsCanvas"></canvas>
+                <div class="frame-overlay"></div>
+                <div class="video-label">You</div>
+                <div id="recording-indicator" class="recording-indicator hidden">
+                    <span class="recording-dot"></span>
+                </div>
+            </div>
+            <button id="zoomBtn" class="btn-zoom" title="Zoom In/Out">
+                <svg id="zoomIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+            </button>
+            <button id="minimizeBtn" class="btn-minimize" title="Minimize UI">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Effects Controls -->
+        <div class="effects-dock">
+        <button id="glassesBtn" class="btn-icon btn-effect" title="Purple Glasses">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 12s3-6 10-6 10 6 10 6-3 6-10 6-10-6-10-6z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </button>
+        <button id="particlesBtn" class="btn-icon btn-effect" title="Particles">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="2"></circle>
+                <circle cx="6" cy="8" r="1.5"></circle>
+                <circle cx="18" cy="8" r="1.5"></circle>
+                <circle cx="6" cy="16" r="1.5"></circle>
+                <circle cx="18" cy="16" r="1.5"></circle>
+            </svg>
+        </button>
+        <button id="sparklesBtn" class="btn-icon btn-effect" title="Sparkles">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"></path>
+                <path d="M19 14L19.5 16.5L22 17L19.5 17.5L19 20L18.5 17.5L16 17L18.5 16.5L19 14Z"></path>
+            </svg>
+        </button>
+        <button id="backgroundBtn" class="btn-icon btn-effect" title="Background Removal">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </button>
+    </div>
+
+        <!-- Background Color Picker -->
+        <div id="bgColorPicker" class="bg-color-picker hidden">
+            <div class="color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="Purple"></div>
+            <div class="color-option" data-color="#3b82f6" style="background: #3b82f6;" title="Blue"></div>
+            <div class="color-option" data-color="#10b981" style="background: #10b981;" title="Green"></div>
+            <div class="color-option" data-color="#f59e0b" style="background: #f59e0b;" title="Orange"></div>
+            <div class="color-option" data-color="#ef4444" style="background: #ef4444;" title="Red"></div>
+            <div class="color-option" data-color="#ec4899" style="background: #ec4899;" title="Pink"></div>
+        </div>
+
+        <!-- Position Calibrator -->
+        <div id="positionCalibrator" class="position-calibrator hidden">
+            <button id="moveUpBtn" class="btn-icon btn-calibrate" title="Move Up">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+            </button>
+            <span id="offsetDisplay" class="offset-display">0</span>
+            <button id="moveDownBtn" class="btn-icon btn-calibrate" title="Move Down">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Glasses Picker -->
+        <div id="glassesPicker" class="glasses-picker hidden">
+            <div class="glasses-option" data-glasses="0" title="Red Glasses">
+                <img src="vtube/Red.png" alt="Red Glasses">
+            </div>
+            <div class="glasses-option" data-glasses="1" title="Deer Antlers 1">
+                <img src="vtube/Deer 1.png" alt="Deer Antlers 1">
+            </div>
+            <div class="glasses-option" data-glasses="2" title="Deer Antlers 2">
+                <img src="vtube/Deer 2.png" alt="Deer Antlers 2">
+            </div>
+            <div class="glasses-option" data-glasses="3" title="Santa Hat 1">
+                <img src="vtube/SantaHat1.png" alt="Santa Hat 1">
+            </div>
+            <div class="glasses-option" data-glasses="4" title="Santa Hat 2">
+                <img src="vtube/SantaHat2.png" alt="Santa Hat 2">
+            </div>
+            <div class="glasses-option" data-glasses="5" title="Dwarf Hat">
+                <img src="vtube/DwarfHat.png" alt="Dwarf Hat">
+            </div>
+            <div class="glasses-option" data-glasses="6" title="Xmas Hat 1">
+                <img src="vtube/xmass hat 1.png" alt="Xmas Hat 1">
+            </div>
+            <div class="glasses-option" data-glasses="7" title="Xmas Hat 2">
+                <img src="vtube/xmass hat 2.png" alt="Xmas Hat 2">
+            </div>
+            <div class="glasses-option" data-glasses="8" title="Xmas Hat 3">
+                <img src="vtube/xmass hat 3.png" alt="Xmas Hat 3">
+            </div>
+            <div class="glasses-option" data-glasses="9" title="Xmas Hat 4">
+                <img src="vtube/xmass hat 4.png" alt="Xmas Hat 4">
+            </div>
+            <div class="glasses-option" data-glasses="10" title="Tree 1">
+                <img src="vtube/Tree1.png" alt="Tree 1">
+            </div>
+            <div class="glasses-option" data-glasses="11" title="Tree 2">
+                <img src="vtube/Tree2.png" alt="Tree 2">
+            </div>
+            <div class="glasses-option" data-glasses="12" title="Snowman">
+                <img src="vtube/Snowman.png" alt="Snowman">
+            </div>
+            <div class="glasses-option" data-glasses="13" title="Gingerbread">
+                <img src="vtube/GingerBread.png" alt="Gingerbread">
+            </div>
+        </div>
+
+        <!-- Minimal Controls -->
+        <div class="controls-dock">
+        <button id="joinVideoBtn" class="btn-icon btn-join" title="Join Video Chat">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        </button>
+        <span id="timer" class="timer">00:00</span>
+        <div class="control-buttons">
+            <button id="startBtn" class="btn-icon btn-record" title="Start Recording">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="8"></circle>
+                </svg>
+            </button>
+            <button id="stopBtn" class="btn-icon btn-stop" disabled title="Stop Recording">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+                </svg>
+            </button>
+        </div>
+        </div>
+    </div>
+
+    <!-- Playback Section -->
+    <div id="playbackSection" class="playback-modal hidden">
+        <div class="playback-content">
+            <h3>Your Recording</h3>
+            <div class="playback-video-container">
+                <video id="playback" controls playsinline></video>
+            </div>
+            <div class="playback-controls">
+                <button id="uploadBtn" class="btn-icon btn-upload" title="Upload & Share">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </button>
+                <a id="downloadBtn" class="btn-icon btn-download" download="video-message.webm" title="Download">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </a>
+                <button id="discardBtn" class="btn-icon btn-discard" title="Discard">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status messages -->
+    <div id="status" class="status-toast hidden"></div>
+
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Fallback to CDN if local Socket.io fails to load
+        if (typeof io === 'undefined') {
+            document.write('<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"><\/script>');
+        }
+    </script>
+
+    <!-- MediaPipe Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+
+    <script src="js/connection.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/recorder.js"></script>
+</body>
+</html>
