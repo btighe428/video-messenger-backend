@@ -1,7 +1,7 @@
 // Configuration
 const BACKEND_URL = window.location.hostname.includes('localhost')
     ? 'http://localhost:3000'
-    : 'YOUR_BACKEND_URL_HERE'; // Replace with your Render backend URL after deployment
+    : 'https://video-messenger-backend.onrender.com'; // Render backend URL
 
 // WebRTC Connection Manager
 class ConnectionManager {
@@ -13,6 +13,7 @@ class ConnectionManager {
         this.isLoggedIn = false;
         this.mySocketId = null;
         this.remoteSocketId = null;
+        this.connectedUsers = [];
 
         // ICE servers configuration (STUN server)
         this.iceServers = {
@@ -47,14 +48,34 @@ class ConnectionManager {
         this.remoteVideo = document.getElementById('remoteVideo');
         this.connectionStatus = document.getElementById('connectionStatus');
 
-        // Join Video Chat button
+        // Join Video Chat button - Direct join (no auth)
         const joinVideoBtn = document.getElementById('joinVideoBtn');
         if (joinVideoBtn) {
             joinVideoBtn.addEventListener('click', () => {
+                // Skip login modal, join directly
+                this.login('no-password-required', 'User-' + Math.floor(Math.random() * 1000));
+
+                /* COMMENTED OUT - Authentication flow
                 this.loginModal.classList.remove('hidden');
+                */
             });
         }
 
+        // Close incoming message button
+        const closeMessageBtn = document.getElementById('closeMessageBtn');
+        if (closeMessageBtn) {
+            closeMessageBtn.addEventListener('click', () => {
+                const modal = document.getElementById('incomingMessageModal');
+                const messageVideo = document.getElementById('incomingMessageVideo');
+                if (modal) modal.classList.add('hidden');
+                if (messageVideo) {
+                    messageVideo.pause();
+                    messageVideo.src = '';
+                }
+            });
+        }
+
+        /* COMMENTED OUT - Authentication UI handlers
         // Login button
         const loginBtn = document.getElementById('loginBtn');
         const passwordInput = document.getElementById('passwordInput');
@@ -76,13 +97,16 @@ class ConnectionManager {
                 }
             });
         }
+        */
     }
 
     login(password, username) {
+        /* COMMENTED OUT - Password validation
         if (!password) {
             this.showStatus('Please enter a password', 'error');
             return;
         }
+        */
 
         // Check if Socket.io is loaded
         if (typeof io === 'undefined') {
@@ -120,24 +144,49 @@ class ConnectionManager {
 
         this.socket.on('users-list', (users) => {
             console.log('Current users:', users);
+            console.log('My socket ID:', this.mySocketId);
+            this.connectedUsers = users;
+            this.updateUsersList();
             // If there are other users, connect to the first one
+            // Only initiate if our socket ID is greater (prevents both users from initiating)
             if (users.length > 0) {
-                this.connectToUser(users[0].socketId);
+                console.log('Comparing socket IDs:', this.mySocketId, '>', users[0].socketId, '=', this.mySocketId > users[0].socketId);
+                if (this.mySocketId > users[0].socketId) {
+                    console.log('I will initiate connection');
+                    this.connectToUser(users[0].socketId);
+                } else {
+                    console.log('Waiting for other user to initiate connection');
+                }
             }
         });
 
         this.socket.on('user-joined', (user) => {
             console.log('User joined:', user);
+            console.log('My socket ID:', this.mySocketId);
+            this.connectedUsers.push(user);
+            this.updateUsersList();
             this.showStatus(`${user.username} joined!`, 'info');
 
             // If we're not connected to anyone, initiate connection
-            if (!this.peerConnection || this.peerConnection.connectionState === 'closed') {
+            // Only initiate if our socket ID is greater (prevents both users from initiating)
+            const shouldConnect = (!this.peerConnection || this.peerConnection.connectionState === 'closed')
+                && this.mySocketId > user.socketId;
+
+            console.log('Peer connection state:', this.peerConnection ? this.peerConnection.connectionState : 'null');
+            console.log('Should I initiate?', shouldConnect);
+
+            if (shouldConnect) {
+                console.log('I will initiate connection to new user');
                 this.connectToUser(user.socketId);
+            } else {
+                console.log('Waiting for other user to initiate connection');
             }
         });
 
         this.socket.on('user-left', (data) => {
             console.log('User left:', data.socketId);
+            this.connectedUsers = this.connectedUsers.filter(u => u.socketId !== data.socketId);
+            this.updateUsersList();
             if (this.remoteSocketId === data.socketId) {
                 this.showStatus('Remote user disconnected', 'info');
                 this.closeConnection();
@@ -159,6 +208,26 @@ class ConnectionManager {
         this.socket.on('ice-candidate', async (data) => {
             console.log('Received ICE candidate from:', data.from);
             await this.handleIceCandidate(data.candidate);
+        });
+
+        // Video message handlers
+        this.socket.on('video-message-received', (data) => {
+            console.log('Received video message from:', data.senderName);
+            this.handleVideoMessageReceived(data);
+        });
+
+        this.socket.on('video-message-sent', (data) => {
+            console.log('Video message sent successfully to:', data.to);
+            this.showStatus('Video message sent successfully!', 'success');
+        });
+
+        // Sticker synchronization
+        this.socket.on('stickers-update', (data) => {
+            console.log('📥 Received sticker update from:', data.from, '|', data.stickers.length, 'stickers');
+            // Pass to sticker manager to handle remote stickers
+            if (window.stickerManager) {
+                window.stickerManager.receiveRemoteStickers(data.stickers);
+            }
         });
     }
 
@@ -186,12 +255,17 @@ class ConnectionManager {
 
             // Handle incoming remote stream
             this.peerConnection.ontrack = (event) => {
-                console.log('Received remote track');
+                console.log('🎥 Received remote track:', event.track.kind);
+                console.log('Remote video element:', this.remoteVideo);
+                console.log('Remote video frame element:', this.remoteVideoFrame);
                 if (!this.remoteStream) {
                     this.remoteStream = new MediaStream();
                     this.remoteVideo.srcObject = this.remoteStream;
+                    console.log('Created new MediaStream for remote video');
                 }
                 this.remoteStream.addTrack(event.track);
+                console.log('Added track to remote stream. Total tracks:', this.remoteStream.getTracks().length);
+                console.log('Showing remote video frame');
                 this.remoteVideoFrame.classList.remove('hidden');
                 this.showStatus('Connected!', 'success');
             };
@@ -250,12 +324,17 @@ class ConnectionManager {
 
                 // Handle incoming remote stream
                 this.peerConnection.ontrack = (event) => {
-                    console.log('Received remote track');
+                    console.log('🎥 Received remote track (in handleOffer):', event.track.kind);
+                    console.log('Remote video element:', this.remoteVideo);
+                    console.log('Remote video frame element:', this.remoteVideoFrame);
                     if (!this.remoteStream) {
                         this.remoteStream = new MediaStream();
                         this.remoteVideo.srcObject = this.remoteStream;
+                        console.log('Created new MediaStream for remote video');
                     }
                     this.remoteStream.addTrack(event.track);
+                    console.log('Added track to remote stream. Total tracks:', this.remoteStream.getTracks().length);
+                    console.log('Showing remote video frame');
                     this.remoteVideoFrame.classList.remove('hidden');
                     this.showStatus('Connected!', 'success');
                 };
@@ -352,6 +431,70 @@ class ConnectionManager {
 
         this.remoteVideoFrame.classList.add('hidden');
         this.remoteSocketId = null;
+    }
+
+    updateUsersList() {
+        const recipientSelect = document.getElementById('recipientSelect');
+        if (!recipientSelect) return;
+
+        // Clear existing options
+        recipientSelect.innerHTML = '<option value="">Select recipient...</option>';
+
+        // Add connected users
+        this.connectedUsers.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.socketId;
+            option.textContent = user.username;
+            recipientSelect.appendChild(option);
+        });
+
+        // Show/hide recipient selector based on user count
+        const recipientContainer = document.getElementById('recipientContainer');
+        if (recipientContainer) {
+            if (this.connectedUsers.length > 0) {
+                recipientContainer.classList.remove('hidden');
+            } else {
+                recipientContainer.classList.add('hidden');
+            }
+        }
+    }
+
+    sendVideoMessage(videoUrl, filename, size, recipientId) {
+        if (!this.socket || !this.isLoggedIn) {
+            this.showStatus('Please join the chat first', 'error');
+            return;
+        }
+
+        if (!recipientId) {
+            this.showStatus('Please select a recipient', 'error');
+            return;
+        }
+
+        this.socket.emit('send-video-message', {
+            videoUrl,
+            filename,
+            size,
+            to: recipientId
+        });
+
+        console.log('Sending video message to:', recipientId);
+    }
+
+    handleVideoMessageReceived(data) {
+        const { videoUrl, filename, senderName, timestamp } = data;
+
+        this.showStatus(`New video message from ${senderName}!`, 'info');
+
+        // Show notification modal
+        const modal = document.getElementById('incomingMessageModal');
+        const messageVideo = document.getElementById('incomingMessageVideo');
+        const messageSender = document.getElementById('messageSender');
+
+        if (modal && messageVideo && messageSender) {
+            messageSender.textContent = senderName;
+            messageVideo.src = videoUrl;
+            modal.classList.remove('hidden');
+        }
     }
 
     showStatus(message, type) {

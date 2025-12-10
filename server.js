@@ -17,7 +17,12 @@ const io = new Server(server, {
         origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app'],
         methods: ["GET", "POST"],
         credentials: true
-    }
+    },
+    // Increase max payload size to handle large image data URLs (default is 1MB)
+    maxHttpBufferSize: 10 * 1024 * 1024, // 10MB
+    // Ping settings to keep connection alive
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
 // Enable CORS for frontend domain
@@ -26,8 +31,20 @@ app.use(cors({
     credentials: true
 }));
 
+// Disable caching for all static files during development
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+    next();
+});
+
 // Serve static files from the public directory
-app.use(express.static('public'));
+app.use(express.static('public', {
+    etag: false,
+    lastModified: false
+}));
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -202,16 +219,18 @@ let connectedUsers = new Map(); // socketId -> userInfo
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // Handle login
+    // Handle login - No authentication required
     socket.on('login', (data) => {
         const { password, username } = data;
 
+        /* COMMENTED OUT - Password authentication
         if (password !== PASSWORD) {
             socket.emit('login-failed', { message: 'Incorrect password' });
             return;
         }
+        */
 
-        // Store user info
+        // Store user info (no password check)
         connectedUsers.set(socket.id, {
             username: username || `User${socket.id.substring(0, 4)}`,
             socketId: socket.id
@@ -226,7 +245,7 @@ io.on('connection', (socket) => {
         socket.emit('users-list', usersList);
         socket.broadcast.emit('user-joined', connectedUsers.get(socket.id));
 
-        console.log(`User logged in: ${connectedUsers.get(socket.id).username} (${socket.id})`);
+        console.log(`User joined: ${connectedUsers.get(socket.id).username} (${socket.id})`);
     });
 
     // WebRTC signaling
@@ -254,6 +273,227 @@ io.on('connection', (socket) => {
             candidate,
             from: socket.id
         });
+    });
+
+    // Handle video message sending
+    socket.on('send-video-message', (data) => {
+        const { videoUrl, filename, size, to } = data;
+        const sender = connectedUsers.get(socket.id);
+
+        if (!sender) {
+            console.log('Sender not found in connected users');
+            return;
+        }
+
+        io.to(to).emit('video-message-received', {
+            videoUrl,
+            filename,
+            size,
+            from: socket.id,
+            senderName: sender.username,
+            timestamp: Date.now()
+        });
+
+        console.log(`Video message sent from ${sender.username} (${socket.id}) to ${to}`);
+
+        // Confirm delivery to sender
+        socket.emit('video-message-sent', {
+            success: true,
+            to: to
+        });
+    });
+
+    // Handle sticker synchronization
+    socket.on('stickers-update', (data) => {
+        const { stickers } = data;
+
+        // Broadcast to all OTHER connected users (not back to sender)
+        socket.broadcast.emit('stickers-update', {
+            stickers: stickers,
+            from: socket.id
+        });
+
+        console.log(`Stickers updated from ${socket.id}: ${stickers.length} stickers`);
+    });
+
+    // ==================== STUDIO MODE EVENTS ====================
+
+    // Track users in studio mode
+    if (!socket.inStudio) {
+        socket.inStudio = false;
+    }
+
+    // User joins studio mode
+    socket.on('studio-join', () => {
+        // Prevent duplicate join broadcasts
+        if (socket.inStudio) {
+            console.log(`User ${socket.id} already in Studio, skipping duplicate join`);
+            return;
+        }
+
+        socket.inStudio = true;
+        const user = connectedUsers.get(socket.id);
+        console.log(`User ${user?.username || socket.id} joined Studio mode`);
+
+        // Notify other studio users
+        socket.broadcast.emit('studio-user-joined', {
+            socketId: socket.id,
+            username: user?.username || 'Guest'
+        });
+
+        // Request current state from other users in studio
+        socket.broadcast.emit('studio-state-request', {
+            requesterId: socket.id
+        });
+
+        // Send list of users currently in studio
+        const studioUsers = [];
+        connectedUsers.forEach((userData, odIds) => {
+            const userSocket = io.sockets.sockets.get(odIds);
+            if (userSocket && userSocket.inStudio && odIds !== socket.id) {
+                studioUsers.push({
+                    socketId: odIds,
+                    username: userData.username
+                });
+            }
+        });
+        socket.emit('studio-users-list', studioUsers);
+    });
+
+    // User leaves studio mode
+    socket.on('studio-leave', () => {
+        socket.inStudio = false;
+        const user = connectedUsers.get(socket.id);
+        console.log(`User ${user?.username || socket.id} left Studio mode`);
+
+        // Notify other studio users
+        socket.broadcast.emit('studio-user-left', {
+            socketId: socket.id
+        });
+    });
+
+    // Client explicitly requests state from other users
+    socket.on('studio-state-request', (data) => {
+        if (!socket.inStudio) return;
+
+        console.log(`User ${socket.id} requesting state from other users`);
+        // Broadcast to all other users in studio
+        socket.broadcast.emit('studio-state-request', {
+            requesterId: data.requesterId || socket.id
+        });
+    });
+
+    // Real-time cursor position updates
+    socket.on('studio-cursor-update', (data) => {
+        if (!socket.inStudio) return;
+
+        const user = connectedUsers.get(socket.id);
+
+        // Broadcast cursor position to all OTHER users in studio
+        socket.broadcast.emit('studio-cursor-update', {
+            socketId: socket.id,
+            x: data.x,
+            y: data.y,
+            color: data.color,
+            name: user?.username || data.name || 'Guest'
+        });
+    });
+
+    // Canvas state synchronization
+    socket.on('studio-canvas-update', (data) => {
+        if (!socket.inStudio) return;
+
+        // If target is specified, send only to that user (for initial sync)
+        if (data.to) {
+            io.to(data.to).emit('studio-canvas-update', {
+                socketId: socket.id,
+                objects: data.objects
+            });
+            console.log(`Canvas state sent from ${socket.id} to ${data.to}: ${data.objects?.length || 0} objects`);
+        } else {
+            // Broadcast canvas state to all OTHER users in studio
+            socket.broadcast.emit('studio-canvas-update', {
+                socketId: socket.id,
+                objects: data.objects
+            });
+            console.log(`Canvas updated from ${socket.id}: ${data.objects?.length || 0} objects`);
+        }
+    });
+
+    // ==================== NEW: Fabric.js Studio Events ====================
+
+    // Real-time emoji reactions
+    socket.on('studio-reaction', (data) => {
+        if (!socket.inStudio) return;
+
+        socket.broadcast.emit('studio-reaction', {
+            socketId: socket.id,
+            emoji: data.emoji,
+            color: data.color
+        });
+    });
+
+    // Fabric object added
+    socket.on('studio-object-added', (data) => {
+        if (!socket.inStudio) return;
+
+        socket.broadcast.emit('studio-object-added', {
+            socketId: socket.id,
+            objectId: data.objectId,
+            json: data.json
+        });
+    });
+
+    // Fabric object modified
+    socket.on('studio-object-modified', (data) => {
+        if (!socket.inStudio) return;
+
+        socket.broadcast.emit('studio-object-modified', {
+            socketId: socket.id,
+            objectId: data.objectId,
+            json: data.json
+        });
+    });
+
+    // Fabric object removed
+    socket.on('studio-object-removed', (data) => {
+        if (!socket.inStudio) return;
+
+        socket.broadcast.emit('studio-object-removed', {
+            socketId: socket.id,
+            objectId: data.objectId
+        });
+    });
+
+    // Canvas sync request (new user asking for current state)
+    socket.on('studio-canvas-sync-request', (data) => {
+        if (!socket.inStudio) return;
+
+        // Broadcast to all other users that someone needs the canvas state
+        socket.broadcast.emit('studio-canvas-sync-request', {
+            requesterId: data.requesterId
+        });
+    });
+
+    // Canvas sync response (sending full canvas state)
+    socket.on('studio-canvas-sync', (data) => {
+        if (!socket.inStudio) return;
+
+        // Send to specific target or broadcast
+        if (data.targetId) {
+            io.to(data.targetId).emit('studio-canvas-sync', {
+                socketId: socket.id,
+                targetId: data.targetId,
+                objects: data.objects,
+                nextObjectId: data.nextObjectId
+            });
+        } else {
+            socket.broadcast.emit('studio-canvas-sync', {
+                socketId: socket.id,
+                objects: data.objects,
+                nextObjectId: data.nextObjectId
+            });
+        }
     });
 
     // Handle disconnect

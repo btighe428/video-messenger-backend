@@ -1,0 +1,953 @@
+/**
+ * Studio Mode Styles
+ *
+ * Implements the visual design for the collaborative canvas mode,
+ * following the existing Yahoo Design System (Oasis) patterns.
+ *
+ * Key Components:
+ * - Studio tab button (positioned next to BG toggle)
+ * - Full-screen canvas container
+ * - Bottom drawer with clipart grid
+ * - Zoom controls
+ * - Remote cursor indicators
+ */
+
+/* ==================== STUDIO TAB BUTTON ==================== */
+
+.studio-toggle-btn {
+    position: fixed;
+    top: 20px;
+    left: 270px; /* Positioned after BG button */
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    background: var(--bg-main);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-dark);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-md);
+    z-index: 1100;
+    cursor: pointer;
+    transition: all 0.3s var(--ease-ios);
+    font-family: var(--font-family);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+}
+
+.studio-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-main);
+}
+
+.studio-toggle-btn:active {
+    transform: translateY(0);
+}
+
+.studio-toggle-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.studio-toggle-text {
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.5px;
+}
+
+.studio-toggle-btn.active {
+    background: var(--text-primary);
+    color: var(--primary-contrast);
+    border-color: var(--text-primary);
+}
+
+.studio-toggle-btn.active svg {
+    stroke: var(--primary-contrast);
+}
+
+/* ==================== STUDIO CONTAINER ==================== */
+
+.studio-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 500;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+}
+
+.studio-container.hidden {
+    display: none;
+}
+
+/* ==================== STUDIO CANVAS ==================== */
+
+#studioCanvas {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    background: #fafafa;
+    cursor: default;
+    touch-action: none; /* Prevent browser handling of touch events */
+}
+
+#studioCanvas.panning {
+    cursor: grabbing;
+}
+
+#studioCanvas.can-grab {
+    cursor: grab;
+}
+
+/* ==================== ZOOM CONTROLS ==================== */
+
+.studio-zoom-controls {
+    position: absolute;
+    bottom: 100px; /* Above the drawer */
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    z-index: 600;
+}
+
+.studio-zoom-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--bg-main);
+    border: 1px solid var(--border-dark);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease-ios);
+    box-shadow: var(--shadow-sm);
+    font-family: var(--font-family);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.studio-zoom-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-main);
+    transform: scale(1.05);
+}
+
+.studio-zoom-btn:active {
+    transform: scale(0.95);
+}
+
+#zoomIndicator {
+    text-align: center;
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    background: var(--bg-main);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-main);
+    min-width: 50px;
+}
+
+/* ==================== STUDIO TOOLBAR ==================== */
+
+.studio-toolbar {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: var(--bg-main);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-main);
+    box-shadow: var(--shadow-md);
+    z-index: 600;
+}
+
+.studio-tool-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease-ios);
+}
+
+.studio-tool-btn:hover {
+    background: var(--bg-secondary);
+}
+
+.studio-tool-btn.active {
+    background: var(--text-primary);
+    color: var(--primary-contrast);
+}
+
+.studio-tool-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* ==================== CLIPART DRAWER ==================== */
+
+.studio-drawer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-main);
+    border-top: 1px solid var(--border-main);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 700;
+    transform: translateY(calc(100% - 60px));
+    transition: transform 0.3s var(--ease-ios);
+}
+
+.studio-drawer.open {
+    transform: translateY(0);
+}
+
+.drawer-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    cursor: pointer;
+    user-select: none;
+}
+
+.drawer-handle-bar {
+    width: 40px;
+    height: 4px;
+    background: var(--border-dark);
+    border-radius: var(--radius-full);
+    transition: background 0.2s ease;
+}
+
+.drawer-handle:hover .drawer-handle-bar {
+    background: var(--text-tertiary);
+}
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-lg) var(--spacing-sm);
+    border-bottom: 1px solid var(--border-main);
+}
+
+.drawer-title {
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+.drawer-subtitle {
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+}
+
+/* ==================== CLIPART GRID ==================== */
+
+.clipart-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.clipart-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    cursor: grab;
+    transition: all 0.2s var(--ease-ios);
+    border: 2px solid transparent;
+    user-select: none;
+}
+
+.clipart-item:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-main);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+}
+
+.clipart-item:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+}
+
+.clipart-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+
+.clipart-emoji {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: var(--spacing-xs);
+}
+
+.clipart-thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: var(--spacing-xs);
+    pointer-events: none;
+}
+
+.clipart-name {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Custom scrollbar for clipart grid */
+.clipart-grid::-webkit-scrollbar {
+    height: 6px;
+}
+
+.clipart-grid::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 3px;
+}
+
+.clipart-grid::-webkit-scrollbar-thumb {
+    background: var(--border-dark);
+    border-radius: 3px;
+}
+
+.clipart-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* ==================== REMOTE CURSORS ==================== */
+
+/* Note: Remote cursors are drawn on the canvas,
+   but we define some supporting styles here */
+
+.cursor-label {
+    position: absolute;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* ==================== PASTE HINT ==================== */
+
+.paste-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: var(--bg-main);
+    border: 2px dashed var(--border-dark);
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+    font-size: var(--font-size-label);
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 550;
+}
+
+.paste-hint.visible {
+    opacity: 1;
+}
+
+.paste-hint-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.paste-hint-text {
+    font-weight: var(--font-weight-medium);
+}
+
+.paste-hint-subtext {
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+    margin-top: var(--spacing-xs);
+}
+
+/* ==================== CLEAR CANVAS BUTTON ==================== */
+
+.studio-clear-btn {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-main);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-ios);
+    font-family: var(--font-family);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow-sm);
+    z-index: 600;
+}
+
+.studio-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.studio-clear-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==================== INSTRUCTION OVERLAY ==================== */
+
+.studio-instructions {
+    position: absolute;
+    bottom: 80px;
+    left: 20px;
+    padding: var(--spacing-md);
+    background: var(--bg-main);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    z-index: 600;
+    max-width: 280px;
+}
+
+.studio-instructions h4 {
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.studio-instructions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.studio-instructions li {
+    font-size: var(--font-size-caption);
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.studio-instructions li::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--primary-main);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.instruction-key {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-xs);
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--text-primary);
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 768px) {
+    .studio-toggle-btn {
+        left: 150px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .studio-toggle-text {
+        display: none;
+    }
+
+    .clipart-grid {
+        grid-template-columns: repeat(5, 1fr);
+        padding: var(--spacing-md);
+    }
+
+    .clipart-emoji {
+        font-size: 28px;
+    }
+
+    .clipart-name {
+        display: none;
+    }
+
+    .studio-instructions {
+        display: none; /* Hide on mobile */
+    }
+
+    .studio-zoom-controls {
+        bottom: 120px;
+    }
+
+    .studio-clear-btn {
+        top: auto;
+        bottom: 120px;
+        right: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    .studio-toggle-btn {
+        left: 120px;
+    }
+
+    .clipart-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-xs);
+    }
+
+    .clipart-item {
+        padding: var(--spacing-xs);
+    }
+
+    .clipart-emoji {
+        font-size: 24px;
+    }
+
+    .studio-drawer {
+        transform: translateY(calc(100% - 50px));
+    }
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Subtle animation for new objects */
+@keyframes objectAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Drawer slide animation enhancement */
+.studio-drawer.opening {
+    animation: drawerSlideUp 0.3s var(--ease-ios) forwards;
+}
+
+@keyframes drawerSlideUp {
+    0% { transform: translateY(calc(100% - 60px)); }
+    100% { transform: translateY(0); }
+}
+
+/* ==================== DROP ZONE INDICATOR ==================== */
+
+#studioCanvas.drag-over {
+    outline: 4px dashed var(--primary-main);
+    outline-offset: -4px;
+    background: rgba(44, 62, 80, 0.05);
+}
+
+.studio-drop-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: var(--primary-main);
+    color: white;
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-label);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+}
+
+.studio-container.dragging-over .studio-drop-hint {
+    opacity: 1;
+}
+
+/* ==================== STUDIO VIDEO PREVIEW ==================== */
+
+.studio-video-preview {
+    position: absolute;
+    bottom: 100px;
+    right: 80px;
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: move;
+    user-select: none;
+    transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+}
+
+.studio-video-preview:hover {
+    transform: scale(1.02);
+}
+
+.studio-video-preview.dragging {
+    z-index: 1000;
+    transform: scale(1.05);
+    opacity: 0.95;
+}
+
+.studio-video-preview .drag-handle {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 20px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.studio-video-preview:hover .drag-handle {
+    opacity: 1;
+}
+
+.studio-video-preview .drag-handle:active {
+    cursor: grabbing;
+}
+
+.studio-video-preview .drag-handle-dots {
+    display: flex;
+    gap: 3px;
+}
+
+.studio-video-preview .drag-handle-dots span {
+    width: 4px;
+    height: 4px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+}
+
+.studio-video-frame {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    box-shadow: var(--shadow-lg);
+    border: 3px solid var(--bg-main);
+}
+
+.studio-video-frame video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.studio-video-label {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.studio-video-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-main);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-main);
+}
+
+.studio-timer {
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: center;
+}
+
+.studio-record-btn,
+.studio-stop-btn,
+.studio-snapshot-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease-ios);
+}
+
+.studio-record-btn {
+    background: var(--text-primary);
+    color: white;
+}
+
+.studio-snapshot-btn {
+    background: var(--primary-main);
+    color: white;
+}
+
+.studio-snapshot-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+    background: var(--primary-dark);
+}
+
+.studio-snapshot-btn:active {
+    transform: scale(0.95);
+}
+
+.studio-snapshot-btn.flash {
+    animation: snapshot-flash 0.3s ease-out;
+}
+
+@keyframes snapshot-flash {
+    0% { background: white; }
+    100% { background: var(--primary-main); }
+}
+
+.studio-record-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+
+.studio-stop-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-dark);
+}
+
+.studio-stop-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+}
+
+.studio-record-btn:disabled,
+.studio-stop-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.studio-record-btn.recording {
+    background: #ef4444;
+    animation: pulse-record 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-record {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* ==================== CONNECTED USERS INDICATOR ==================== */
+
+.studio-users-indicator {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-main);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+    z-index: 600;
+}
+
+.users-avatars {
+    display: flex;
+    margin-right: var(--spacing-xs);
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-main);
+    margin-left: -8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.user-avatar:first-child {
+    margin-left: 0;
+}
+
+.users-count {
+    font-size: var(--font-size-caption);
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+}
+
+/* ==================== STUDIO TOP BAR ==================== */
+
+.studio-top-bar {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    z-index: 900;
+}
+
+.studio-connection-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+    font-size: var(--font-size-caption);
+    color: var(--text-secondary);
+}
+
+.studio-connection-status .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulse-dot 2s infinite;
+}
+
+.studio-connection-status .status-dot.connected {
+    background: #10b981;
+    animation: none;
+}
+
+.studio-connection-status .status-dot.connecting {
+    background: #f59e0b;
+    animation: pulse-dot 1s infinite;
+}
+
+.studio-connection-status .status-text {
+    font-weight: var(--font-weight-medium);
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ==================== STUDIO PIP CONNECT BUTTON ==================== */
+
+.studio-pip-connect-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-main);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s var(--ease-ios);
+    margin-bottom: var(--spacing-sm);
+}
+
+.studio-pip-connect-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-lg);
+    background: var(--primary-dark);
+}
+
+.studio-pip-connect-btn:active {
+    transform: scale(0.98);
+}
+
+.studio-pip-connect-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.studio-pip-connect-btn.connected {
+    background: #10b981;
+}
+
+.studio-pip-connect-btn.connected:hover {
+    background: #059669;
+}
+
+.studio-pip-connect-btn.connecting {
+    background: #f59e0b;
+    animation: pulse-btn 1s infinite;
+}
+
+@keyframes pulse-btn {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}

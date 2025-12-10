@@ -67,8 +67,39 @@ class FaceEffects {
 
         // Set up canvas size to match video
         this.video.addEventListener('loadedmetadata', () => {
+            console.log('📹 Video loadedmetadata event fired');
             this.resizeCanvas();
         });
+
+        // Resize when video actually starts playing (dimensions definitely available)
+        this.video.addEventListener('playing', () => {
+            console.log('▶️ Video playing event fired');
+            this.resizeCanvas();
+        });
+
+        // Resize when video is ready to play
+        this.video.addEventListener('canplay', () => {
+            console.log('🎬 Video canplay event fired');
+            this.resizeCanvas();
+        });
+
+        // Add window resize listener to handle zoom and window size changes
+        window.addEventListener('resize', () => {
+            this.resizeCanvas();
+        });
+
+        // Use ResizeObserver for more granular layout changes
+        if (window.ResizeObserver) {
+            const resizeObserver = new ResizeObserver(() => {
+                this.resizeCanvas();
+            });
+            resizeObserver.observe(this.canvas);
+        }
+
+        // Initial resize after a short delay to ensure layout is settled
+        setTimeout(() => {
+            this.resizeCanvas();
+        }, 100);
 
         // Load glasses images
         await this.loadGlassesImages();
@@ -81,6 +112,11 @@ class FaceEffects {
 
         // Set up button listeners
         this.setupControls();
+
+        // Final resize after full initialization to catch any late layout changes
+        setTimeout(() => {
+            this.resizeCanvas();
+        }, 500);
 
         console.log('Face Effects initialized');
     }
@@ -112,11 +148,31 @@ class FaceEffects {
     }
 
     resizeCanvas() {
-        const rect = this.video.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
-        this.bgCanvas.width = this.video.videoWidth || rect.width;
-        this.bgCanvas.height = this.video.videoHeight || rect.height;
+        // CRITICAL: Canvas internal dimensions must match actual video resolution
+        // to prevent stretching when composited into recordingCanvas during recording
+
+        // Check if video dimensions are actually loaded
+        if (!this.video.videoWidth || !this.video.videoHeight) {
+            console.warn('⚠️ Video dimensions not loaded yet, using fallback 640x480');
+            console.warn(`video.videoWidth=${this.video.videoWidth}, video.videoHeight=${this.video.videoHeight}`);
+        }
+
+        const videoWidth = this.video.videoWidth || 640;
+        const videoHeight = this.video.videoHeight || 480;
+
+        // Set canvas internal dimensions to match video resolution
+        this.canvas.width = videoWidth;
+        this.canvas.height = videoHeight;
+
+        // Background canvas also uses video's actual video dimensions
+        this.bgCanvas.width = videoWidth;
+        this.bgCanvas.height = videoHeight;
+
+        // Get display dimensions for logging
+        const canvasRect = this.canvas.getBoundingClientRect();
+        console.log(`✅ Canvas resized: internal=${this.canvas.width}x${this.canvas.height} (video resolution), display=${Math.round(canvasRect.width)}x${Math.round(canvasRect.height)} (CSS)`);
+        console.log(`📹 Video stream dimensions: ${videoWidth}x${videoHeight}`);
+        console.log(`📐 Aspect ratio: ${(videoWidth/videoHeight).toFixed(2)} (video) vs ${(canvasRect.width/canvasRect.height).toFixed(2)} (display)`);
     }
 
     async initFaceMesh() {
@@ -206,12 +262,20 @@ class FaceEffects {
             this.drawBackgroundReplacement();
         }
 
-        // If only background effect is active and no face landmarks, still show the background
+        // If only background effect is active and no face landmarks, still show the background and stickers
         if (this.activeEffects.background && this.segmentationMask && (!this.faceLandmarks || this.faceLandmarks.length === 0)) {
-            return; // Just show the background without face effects
+            // Draw stickers even without face detection
+            if (window.stickerManager) {
+                window.stickerManager.drawStickers();
+            }
+            return;
         }
 
         if (!this.faceLandmarks || this.faceLandmarks.length === 0) {
+            // Draw stickers even without face detection
+            if (window.stickerManager) {
+                window.stickerManager.drawStickers();
+            }
             return;
         }
 
@@ -228,6 +292,11 @@ class FaceEffects {
 
         if (this.activeEffects.sparkles) {
             this.updateAndDrawSparkles(landmarks);
+        }
+
+        // Draw stickers on top of everything (always, not just when face detected)
+        if (window.stickerManager) {
+            window.stickerManager.drawStickers();
         }
     }
 
@@ -620,6 +689,47 @@ class FaceEffects {
 
         // Set default selected color
         colorOptions[0].classList.add('selected');
+
+        // Premium button and picker
+        const premiumBtn = document.getElementById('premiumBtn');
+        const premiumPicker = document.getElementById('premiumPicker');
+        const premiumOptions = document.querySelectorAll('.premium-option');
+
+        if (premiumBtn && premiumPicker) {
+            premiumBtn.addEventListener('click', () => {
+                premiumBtn.classList.toggle('active');
+                premiumPicker.classList.toggle('hidden');
+            });
+
+            // Premium option clicks
+            premiumOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    if (option.classList.contains('locked')) {
+                        // Show locked message or do nothing
+                        console.log('Premium effect locked:', option.dataset.premium);
+                        return;
+                    }
+
+                    // Remove selected from all
+                    premiumOptions.forEach(opt => opt.classList.remove('active'));
+                    // Add selected to clicked
+                    option.classList.add('active');
+
+                    // Handle premium effect selection
+                    const effectType = option.dataset.premium;
+                    console.log('Selected premium effect:', effectType);
+                    // TODO: Apply premium effect
+                });
+            });
+
+            // Close premium picker when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!premiumBtn.contains(e.target) && !premiumPicker.contains(e.target)) {
+                    premiumPicker.classList.add('hidden');
+                    premiumBtn.classList.remove('active');
+                }
+            });
+        }
     }
 
     destroy() {

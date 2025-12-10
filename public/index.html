@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Messenger</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Video Messenger - Yahoo Mail</title>
+    <link rel="stylesheet" href="css/styles.css?v=5">
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/studio.css">
+    <link rel="stylesheet" href="css/studio-fabric.css?v=5">
 </head>
 <body>
     <!-- Login Modal -->
@@ -35,13 +38,39 @@
         <span class="status-text">Not Connected</span>
     </div>
 
+    <!-- Background Toggle Button -->
+    <button id="bgToggleBtn" class="bg-toggle-btn active" title="Toggle Background">
+        <svg id="bgToggleIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <span id="bgToggleText" class="bg-toggle-text">BG</span>
+    </button>
+
+    <!-- Studio Mode Toggle Button -->
+    <button id="studioToggleBtn" class="studio-toggle-btn" title="Open Studio Canvas">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="20" rx="2"></rect>
+            <path d="M8 6h8M6 10h12M8 14h8M10 18h4"></path>
+        </svg>
+        <span class="studio-toggle-text">Studio</span>
+    </button>
+
     <!-- Draggable UI Container -->
     <div class="draggable-ui-container" id="draggableUI">
+        <!-- Drag Handle -->
+        <div class="drag-handle" id="dragHandle" title="Drag to move frame">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/>
+            </svg>
+        </div>
         <!-- Circular Video Preview - Bottom Right -->
         <div class="video-preview-dock" id="videoPreviewDock">
             <div class="video-frame">
                 <video id="preview" autoplay muted playsinline></video>
                 <canvas id="effectsCanvas"></canvas>
+                <canvas id="stickersCanvas"></canvas>
                 <div class="frame-overlay"></div>
                 <div class="video-label">You</div>
                 <div id="recording-indicator" class="recording-indicator hidden">
@@ -70,27 +99,59 @@
                 <path d="M2 12s3-6 10-6 10 6 10 6-3 6-10 6-10-6-10-6z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
             </svg>
-        </button>
-        <button id="particlesBtn" class="btn-icon btn-effect" title="Particles">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="2"></circle>
-                <circle cx="6" cy="8" r="1.5"></circle>
-                <circle cx="18" cy="8" r="1.5"></circle>
-                <circle cx="6" cy="16" r="1.5"></circle>
-                <circle cx="18" cy="16" r="1.5"></circle>
-            </svg>
+            <span class="btn-label">Glasses</span>
         </button>
         <button id="sparklesBtn" class="btn-icon btn-effect" title="Sparkles">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"></path>
                 <path d="M19 14L19.5 16.5L22 17L19.5 17.5L19 20L18.5 17.5L16 17L18.5 16.5L19 14Z"></path>
             </svg>
+            <span class="btn-label">Sparkles</span>
         </button>
         <button id="backgroundBtn" class="btn-icon btn-effect" title="Background Removal">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
             </svg>
+            <span class="btn-label">Background</span>
+        </button>
+        <button id="frameBtn" class="btn-icon btn-effect" title="Custom Frames">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <rect x="7" y="7" width="10" height="10" rx="1"></rect>
+            </svg>
+            <span class="btn-label">Frames</span>
+        </button>
+        <button id="particlesBtn" class="btn-icon btn-effect active" title="Confetti & Particles">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="6" cy="6" r="2"></circle>
+                <circle cx="18" cy="6" r="2"></circle>
+                <circle cx="6" cy="18" r="2"></circle>
+                <circle cx="18" cy="18" r="2"></circle>
+                <rect x="11" y="4" width="2" height="3" transform="rotate(45 12 5.5)"></rect>
+                <rect x="17" y="10" width="2" height="3" transform="rotate(135 18 11.5)"></rect>
+                <rect x="11" y="17" width="2" height="3" transform="rotate(225 12 18.5)"></rect>
+                <rect x="4" y="11" width="2" height="3" transform="rotate(315 5 12.5)"></rect>
+                <polygon points="12,9 13,11 15,12 13,13 12,15 11,13 9,12 11,11"></polygon>
+            </svg>
+            <span class="btn-label">Confetti</span>
+        </button>
+        <button id="stickerBtn" class="btn-icon btn-effect" title="Add Stickers">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="9" r="1.5"></circle>
+                <circle cx="15" cy="9" r="1.5"></circle>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+                <path d="M8.5 14.5c1 1.5 2.5 2 3.5 2s2.5-.5 3.5-2"></path>
+            </svg>
+            <span class="btn-label">Stickers</span>
+        </button>
+        <button id="premiumBtn" class="btn-icon btn-effect btn-premium" title="Premium Effects">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"></path>
+                <path d="M19 14L19.5 16.5L22 17L19.5 17.5L19 20L18.5 17.5L16 17L18.5 16.5L19 14Z"></path>
+            </svg>
+            <span class="btn-label">Premium</span>
+            <span class="lock-badge">🔐</span>
         </button>
     </div>
 
@@ -165,6 +226,83 @@
             </div>
         </div>
 
+        <!-- Frame Picker -->
+        <div id="framePicker" class="frame-picker hidden">
+            <div class="frame-option active" data-frame="frame.png" title="Original Frame">
+                <div class="frame-preview">
+                    <div class="preview-circle">
+                        <span>🖼️</span>
+                    </div>
+                </div>
+                <span class="frame-label">Original</span>
+            </div>
+            <div class="frame-option" data-frame="doodle" title="Hand-Drawn Doodles">
+                <div class="frame-preview">
+                    <div class="preview-circle doodle-style">
+                        <span>✏️</span>
+                    </div>
+                </div>
+                <span class="frame-label">Doodle</span>
+            </div>
+            <div class="frame-option" data-frame="washi" title="Washi Tape">
+                <div class="frame-preview">
+                    <div class="preview-circle washi-style">
+                        <span>📎</span>
+                    </div>
+                </div>
+                <span class="frame-label">Washi</span>
+            </div>
+            <div class="frame-option" data-frame="polaroid" title="Polaroid Style">
+                <div class="frame-preview">
+                    <div class="preview-circle polaroid-style">
+                        <span>📷</span>
+                    </div>
+                </div>
+                <span class="frame-label">Polaroid</span>
+            </div>
+            <div class="frame-option" data-frame="stickers" title="Sticker Burst">
+                <div class="frame-preview">
+                    <div class="preview-circle stickers-style">
+                        <span>⭐</span>
+                    </div>
+                </div>
+                <span class="frame-label">Stickers</span>
+            </div>
+            <div class="frame-option" data-frame="winter" title="Winter Wonderland">
+                <div class="frame-preview">
+                    <div class="preview-circle winter-style">
+                        <span>❄️</span>
+                    </div>
+                </div>
+                <span class="frame-label">Winter</span>
+            </div>
+            <div class="frame-option locked" data-frame="spring" title="🔒 Coming Soon!">
+                <div class="frame-preview">
+                    <div class="preview-circle spring-style">
+                        <span>🔒</span>
+                    </div>
+                </div>
+                <span class="frame-label">Locked</span>
+            </div>
+        </div>
+
+        <!-- Sticker Picker -->
+        <div id="stickerPicker" class="sticker-picker hidden"></div>
+
+        <!-- Premium Picker -->
+        <div id="premiumPicker" class="premium-picker hidden">
+            <div class="premium-header">
+                <span class="premium-title">✨ Premium</span>
+                <span class="premium-badge">PREVIEW</span>
+            </div>
+            <div class="premium-preview">
+                <img src="css/premium.png" alt="Premium Effect Preview">
+            </div>
+            <div class="premium-footer">
+                <span class="premium-cta">Coming soon with Yahoo Mail Premium</span>
+            </div>
+        </div>
+
         <!-- Minimal Controls -->
         <div class="controls-dock">
         <button id="joinVideoBtn" class="btn-icon btn-join" title="Join Video Chat">
@@ -191,29 +329,367 @@
         </div>
     </div>
 
-    <!-- Playback Section -->
-    <div id="playbackSection" class="playback-modal hidden">
-        <div class="playback-content">
-            <h3>Your Recording</h3>
-            <div class="playback-video-container">
-                <video id="playback" controls playsinline></video>
+    <!-- Studio Mode Container -->
+    <div id="studioContainer" class="studio-container hidden">
+        <!-- Studio Canvas -->
+        <canvas id="studioCanvas"></canvas>
+
+        <!-- Drop Hint -->
+        <div class="studio-drop-hint">Drop image here</div>
+
+        <!-- Studio Top Bar (Connection Status only) -->
+        <div class="studio-top-bar">
+            <div class="studio-connection-status" id="studioConnectionStatus">
+                <div class="status-dot disconnected"></div>
+                <span class="status-text">Not Connected</span>
             </div>
-            <div class="playback-controls">
-                <button id="uploadBtn" class="btn-icon btn-upload" title="Upload & Share">
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="studio-zoom-controls">
+            <button id="zoomInBtn" class="studio-zoom-btn" title="Zoom In">+</button>
+            <span id="zoomIndicator">100%</span>
+            <button id="zoomOutBtn" class="studio-zoom-btn" title="Zoom Out">−</button>
+            <button id="resetViewBtn" class="studio-zoom-btn" title="Reset View" style="font-size: 14px;">⟲</button>
+        </div>
+
+        <!-- Clear Canvas Button -->
+        <button id="clearCanvasBtn" class="studio-clear-btn" title="Clear Canvas">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Clear
+        </button>
+
+        <!-- Studio Video Preview (Picture-in-Picture style) -->
+        <div id="studioVideoPreview" class="studio-video-preview">
+            <!-- Connect Button (above video) -->
+            <button id="studioConnectBtn" class="studio-pip-connect-btn" title="Connect to Video Chat">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </button>
+            <!-- Drag Handle -->
+            <div class="drag-handle" id="studioVideoDragHandle">
+                <div class="drag-handle-dots">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+            </div>
+            <div class="studio-video-frame">
+                <video id="studioPreviewVideo" autoplay muted playsinline></video>
+                <div class="studio-video-label">You</div>
+            </div>
+            <div class="studio-video-controls">
+                <span id="studioTimer" class="studio-timer">00:00</span>
+                <button id="studioSnapshotBtn" class="studio-snapshot-btn" title="Take Snapshot">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
                     </svg>
                 </button>
-                <a id="downloadBtn" class="btn-icon btn-download" download="video-message.webm" title="Download">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button id="studioRecordBtn" class="studio-record-btn" title="Start Recording">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="8"></circle>
+                    </svg>
+                </button>
+                <button id="studioStopBtn" class="studio-stop-btn" disabled title="Stop Recording">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Connected Users Indicator -->
+        <div id="studioUsersIndicator" class="studio-users-indicator hidden">
+            <div class="users-avatars" id="usersAvatars"></div>
+            <span class="users-count" id="usersCount">1 in studio</span>
+        </div>
+
+        <!-- Instructions Panel -->
+        <div class="studio-instructions">
+            <h4>Studio Controls</h4>
+            <ul>
+                <li><span class="instruction-key">Scroll</span> to zoom in/out</li>
+                <li><span class="instruction-key">Drag</span> canvas to pan</li>
+                <li><span class="instruction-key">Ctrl+V</span> to paste images</li>
+                <li><span class="instruction-key">Del</span> to remove selected</li>
+                <li>Drag clipart from drawer below</li>
+            </ul>
+        </div>
+
+        <!-- Clipart Drawer -->
+        <div id="studioDrawer" class="studio-drawer">
+            <div id="drawerToggle" class="drawer-handle">
+                <div class="drawer-handle-bar"></div>
+            </div>
+            <div class="drawer-header">
+                <div>
+                    <div class="drawer-title">Clipart Library</div>
+                    <div class="drawer-subtitle">Drag items onto canvas or click to add</div>
+                </div>
+            </div>
+            <div id="clipartGrid" class="clipart-grid">
+                <!-- Clipart items populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Fabric.js Studio Container -->
+    <div id="studioFabricContainer" class="studio-fabric-container hidden">
+        <!-- Left Toolbar -->
+        <div class="studio-left-toolbar">
+            <!-- Primary Create Button -->
+            <button class="studio-create-btn" id="studioMainCreateBtn" title="Create">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+
+            <!-- Tool Buttons -->
+            <button class="studio-tool-btn active" data-tool="select" title="Select">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                </svg>
+                <span class="tool-label">Select</span>
+            </button>
+
+            <button class="studio-tool-btn" data-tool="draw" data-panel="draw" title="Draw">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                    <path d="M2 2l7.586 7.586"/>
+                </svg>
+                <span class="tool-label">Draw</span>
+            </button>
+
+            <button class="studio-tool-btn" data-tool="text" data-panel="text" title="Text">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="4 7 4 4 20 4 20 7"/>
+                    <line x1="9" y1="20" x2="15" y2="20"/>
+                    <line x1="12" y1="4" x2="12" y2="20"/>
+                </svg>
+                <span class="tool-label">Text</span>
+            </button>
+
+            <button class="studio-tool-btn" data-panel="stickers" title="Stickers">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                </svg>
+                <span class="tool-label">Stickers</span>
+            </button>
+
+            <button class="studio-tool-btn" data-panel="gifs" title="GIFs">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+                    <line x1="7" y1="2" x2="7" y2="22"/>
+                    <line x1="17" y1="2" x2="17" y2="22"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <line x1="2" y1="7" x2="7" y2="7"/>
+                    <line x1="2" y1="17" x2="7" y2="17"/>
+                    <line x1="17" y1="17" x2="22" y2="17"/>
+                    <line x1="17" y1="7" x2="22" y2="7"/>
+                </svg>
+                <span class="tool-label">GIFs</span>
+            </button>
+
+            <button class="studio-tool-btn" data-panel="clipart" title="Clipart">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span class="tool-label">Clipart</span>
+            </button>
+
+            <button class="studio-tool-btn" id="studioImageBtn" title="Upload Image">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span class="tool-label">Images</span>
+            </button>
+
+            <button class="studio-tool-btn" id="studioCameraBtn" title="Add Camera Selfie">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span class="tool-label">Selfie</span>
+            </button>
+
+            <button class="studio-tool-btn studio-premium-btn" id="studioPremiumBtn" data-panel="premium" title="Premium Effects">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/>
+                    <path d="M19 14L19.5 16.5L22 17L19.5 17.5L19 20L18.5 17.5L16 17L18.5 16.5L19 14Z"/>
+                </svg>
+                <span class="tool-label">Premium</span>
+                <span class="studio-lock-badge">🔐</span>
+            </button>
+
+            <div class="studio-toolbar-divider"></div>
+
+            <button class="studio-tool-btn" id="studioUndoBtn" title="Undo (Ctrl+Z)" disabled>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+            </button>
+
+            <button class="studio-tool-btn" id="studioRedoBtn" title="Redo (Ctrl+Shift+Z)" disabled>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+            </button>
+
+            <div class="studio-toolbar-spacer"></div>
+
+            <!-- Save and Send Button at bottom -->
+            <button class="studio-tool-btn studio-send-btn" id="studioSendEmailBtn" title="Save and Send">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                <span class="tool-label">Save & Send</span>
+            </button>
+        </div>
+
+        <!-- Secondary Panel (slides out) -->
+        <div id="studioSecondaryPanel" class="studio-secondary-panel">
+            <div id="studioPanelContent" class="studio-panel-content">
+                <!-- Panel content rendered by JS -->
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="studioCanvasContainer" class="studio-canvas-container">
+            <canvas id="studioFabricCanvas"></canvas>
+
+            <!-- Cursor Overlay (for multiplayer) -->
+            <div class="studio-cursor-overlay" id="studioCursorOverlay"></div>
+        </div>
+
+        <!-- Floating Create Button -->
+        <div class="studio-floating-create">
+            <div id="studioQuickMenu" class="studio-quick-menu">
+                <button class="studio-quick-menu-item" data-action="draw">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                    </svg>
+                    Start Drawing
+                </button>
+                <button class="studio-quick-menu-item" data-action="text">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="4 7 4 4 20 4 20 7"/>
+                        <line x1="12" y1="4" x2="12" y2="20"/>
+                    </svg>
+                    Add Text
+                </button>
+                <button class="studio-quick-menu-item" data-action="sticker">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    </svg>
+                    Add Sticker
+                </button>
+                <button class="studio-quick-menu-item" data-action="gif">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="20" rx="2"/>
+                    </svg>
+                    Add GIF
+                </button>
+                <button class="studio-quick-menu-item" data-action="image">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                    </svg>
+                    Upload Image
+                </button>
+            </div>
+            <button id="studioFloatingCreateBtn" class="studio-floating-create-btn">
+                <span>✨</span>
+                Create
+            </button>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="studio-zoom-controls">
+            <button id="studioZoomOut" class="studio-zoom-btn" title="Zoom Out">−</button>
+            <span id="studioZoomDisplay">100%</span>
+            <button id="studioZoomIn" class="studio-zoom-btn" title="Zoom In">+</button>
+        </div>
+    </div>
+
+    <!-- Video Envelope Component -->
+    <div id="videoEnvelope" class="video-envelope hidden" role="dialog" aria-label="Video message preview">
+        <div class="envelope-container">
+            <!-- Envelope Flap -->
+            <div class="envelope-flap"></div>
+
+            <!-- Video Preview in Envelope -->
+            <div class="envelope-body">
+                <video id="playback" playsinline aria-label="Recorded video preview"></video>
+            </div>
+
+            <!-- Recipient Selector -->
+            <div id="recipientContainer" class="envelope-recipient hidden">
+                <select id="recipientSelect" class="envelope-select" aria-label="Select recipient">
+                    <option value="">To: Select recipient...</option>
+                </select>
+            </div>
+
+            <!-- Send Button (Flying Envelope Style) -->
+            <button id="sendEnvelopeBtn" class="btn-send-envelope" title="Send Video Message" aria-label="Send video message">
+                <svg class="envelope-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span class="send-text">Send</span>
+            </button>
+
+            <!-- Action Buttons -->
+            <div class="envelope-actions" role="group" aria-label="Video controls">
+                <button id="playEnvelopeBtn" class="btn-envelope-action" title="Play video" aria-label="Play video">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                </button>
+                <a id="downloadBtn" class="btn-envelope-action" download="video-message.webm" title="Download video" aria-label="Download video">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
                 </a>
-                <button id="discardBtn" class="btn-icon btn-discard" title="Discard">
+                <button id="discardBtn" class="btn-envelope-action btn-discard" title="Discard video" aria-label="Discard video">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incoming Message Modal -->
+    <div id="incomingMessageModal" class="playback-modal hidden">
+        <div class="playback-content">
+            <h3>Video Message from <span id="messageSender"></span></h3>
+            <div class="playback-video-container">
+                <video id="incomingMessageVideo" controls autoplay playsinline></video>
+            </div>
+            <div class="playback-controls">
+                <button id="closeMessageBtn" class="btn-icon btn-discard" title="Close">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -241,8 +717,97 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
 
-    <script src="js/connection.js"></script>
-    <script src="js/effects.js"></script>
-    <script src="js/recorder.js"></script>
+    <!-- Menu Manager - Load first to handle all menu interactions -->
+    <script src="js/menu-manager.js?v=1"></script>
+
+    <script src="js/connection.js?v=17"></script>
+    <script src="js/effects.js?v=17"></script>
+    <script src="js/particles.js?v=17"></script>
+    <script src="js/stickers.js?v=17"></script>
+    <script src="js/achievements.js?v=17"></script>
+    <script src="js/recorder.js?v=17"></script>
+    <script src="js/frames.js?v=17"></script>
+    <script src="js/studio.js?v=1"></script>
+
+    <!-- Fabric.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+    <!-- New Fabric.js Studio -->
+    <script src="js/studio-fabric.js?v=5"></script>
+    <script src="js/studio-panels.js?v=5"></script>
+    <script src="js/studio-tools.js?v=2"></script>
+
+    <!-- Layout Validator Agent - Ensures perfect circular button arrangement -->
+    <script src="js/layout-validator.js?v=1"></script>
+
+    <!-- Initialize new studio toggle -->
+    <script>
+        // Toggle between old and new studio (for development/testing)
+        document.addEventListener('DOMContentLoaded', function() {
+            const studioToggleBtn = document.getElementById('studioToggleBtn');
+            const bgToggleBtn = document.getElementById('bgToggleBtn');
+            const oldStudioContainer = document.getElementById('studioContainer');
+            const newStudioContainer = document.getElementById('studioFabricContainer');
+            const draggableUI = document.getElementById('draggableUI');
+
+            // Use new fabric studio by default
+            const useNewStudio = true;
+
+            if (studioToggleBtn && useNewStudio) {
+                // Override studio toggle to use new fabric studio
+                studioToggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation(); // Prevent old studio.js handler from running
+                    e.preventDefault();
+
+                    const isActive = studioToggleBtn.classList.contains('active');
+
+                    if (isActive) {
+                        // Deactivate studio
+                        studioToggleBtn.classList.remove('active');
+                        newStudioContainer.classList.add('hidden');
+                        oldStudioContainer.classList.add('hidden');
+
+                        // Show the regular video UI again
+                        if (draggableUI) draggableUI.classList.remove('hidden');
+
+                        // Deactivate fabric canvas
+                        if (window.studioFabric) {
+                            window.studioFabric.deactivate();
+                        }
+                    } else {
+                        // Activate new studio
+                        studioToggleBtn.classList.add('active');
+                        if (bgToggleBtn) bgToggleBtn.classList.remove('active');
+                        newStudioContainer.classList.remove('hidden');
+                        oldStudioContainer.classList.add('hidden');
+
+                        // Hide the regular video UI completely
+                        if (draggableUI) draggableUI.classList.add('hidden');
+
+                        // Activate fabric canvas
+                        if (window.studioFabric) {
+                            window.studioFabric.activate();
+                        }
+                    }
+                }, true); // Use capture to override existing handler
+            }
+
+            // Also handle bgToggleBtn to show video UI and hide studio
+            if (bgToggleBtn) {
+                bgToggleBtn.addEventListener('click', function(e) {
+                    // Ensure studio is hidden and video UI is shown
+                    if (studioToggleBtn) studioToggleBtn.classList.remove('active');
+                    if (newStudioContainer) newStudioContainer.classList.add('hidden');
+                    if (oldStudioContainer) oldStudioContainer.classList.add('hidden');
+                    if (draggableUI) draggableUI.classList.remove('hidden');
+
+                    if (window.studioFabric) {
+                        window.studioFabric.deactivate();
+                    }
+                }, true);
+            }
+        });
+    </script>
 </body>
 </html>

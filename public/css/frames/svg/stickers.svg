@@ -1,0 +1,104 @@
+<svg width="1000" height="1000" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sticker burst frame - scattered stars and hearts around edges -->
+
+  <!-- Stars scattered around -->
+  <!-- Top left stars -->
+  <g>
+    <path d="M 60 60 L 65 80 L 85 80 L 70 90 L 75 110 L 60 100 L 45 110 L 50 90 L 35 80 L 55 80 Z"
+          fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+    <path d="M 120 40 L 123 52 L 135 52 L 125 59 L 128 71 L 120 64 L 112 71 L 115 59 L 105 52 L 117 52 Z"
+          fill="#FF6B6B" stroke="#E63946" stroke-width="2"/>
+    <path d="M 180 70 L 183 82 L 195 82 L 185 89 L 188 101 L 180 94 L 172 101 L 175 89 L 165 82 L 177 82 Z"
+          fill="#4ECDC4" stroke="#2A9D8F" stroke-width="2"/>
+  </g>
+
+  <!-- Top right stars -->
+  <g>
+    <path d="M 940 60 L 945 80 L 965 80 L 950 90 L 955 110 L 940 100 L 925 110 L 930 90 L 915 80 L 935 80 Z"
+          fill="#FF69B4" stroke="#E63946" stroke-width="2"/>
+    <path d="M 880 40 L 883 52 L 895 52 L 885 59 L 888 71 L 880 64 L 872 71 L 875 59 L 865 52 L 877 52 Z"
+          fill="#9D4EDD" stroke="#7209B7" stroke-width="2"/>
+    <path d="M 820 70 L 823 82 L 835 82 L 825 89 L 828 101 L 820 94 L 812 101 L 815 89 L 805 82 L 817 82 Z"
+          fill="#06FFA5" stroke="#06D6A0" stroke-width="2"/>
+  </g>
+
+  <!-- Bottom left stars -->
+  <g>
+    <path d="M 60 940 L 65 920 L 85 920 L 70 910 L 75 890 L 60 900 L 45 890 L 50 910 L 35 920 L 55 920 Z"
+          fill="#F72585" stroke="#B5179E" stroke-width="2"/>
+    <path d="M 120 960 L 123 948 L 135 948 L 125 941 L 128 929 L 120 936 L 112 929 L 115 941 L 105 948 L 117 948 Z"
+          fill="#FFB703" stroke="#FB8500" stroke-width="2"/>
+    <path d="M 180 930 L 183 918 L 195 918 L 185 911 L 188 899 L 180 906 L 172 899 L 175 911 L 165 918 L 177 918 Z"
+          fill="#7209B7" stroke="#560BAD" stroke-width="2"/>
+  </g>
+
+  <!-- Bottom right stars -->
+  <g>
+    <path d="M 940 940 L 945 920 L 965 920 L 950 910 L 955 890 L 940 900 L 925 890 L 930 910 L 915 920 L 935 920 Z"
+          fill="#06FFA5" stroke="#06D6A0" stroke-width="2"/>
+    <path d="M 880 960 L 883 948 L 895 948 L 885 941 L 888 929 L 880 936 L 872 929 L 875 941 L 865 948 L 877 948 Z"
+          fill="#F72585" stroke="#B5179E" stroke-width="2"/>
+    <path d="M 820 930 L 823 918 L 835 918 L 825 911 L 828 899 L 820 906 L 812 899 L 815 911 L 805 918 L 817 918 Z"
+          fill="#FFD60A" stroke="#FCA311" stroke-width="2"/>
+  </g>
+
+  <!-- Hearts scattered around -->
+  <!-- Top hearts -->
+  <g>
+    <path d="M 280 50 C 280 40 270 35 265 35 C 260 35 255 40 255 45 C 255 40 250 35 245 35 C 240 35 230 40 230 50 C 230 65 255 80 255 80 C 255 80 280 65 280 50 Z"
+          fill="#FF1744" stroke="#D50000" stroke-width="2"/>
+    <path d="M 500 35 C 500 28 493 24 489 24 C 485 24 481 28 481 33 C 481 28 477 24 473 24 C 469 24 462 28 462 35 C 462 46 481 58 481 58 C 481 58 500 46 500 35 Z"
+          fill="#FF4081" stroke="#F50057" stroke-width="2"/>
+    <path d="M 720 50 C 720 40 710 35 705 35 C 700 35 695 40 695 45 C 695 40 690 35 685 35 C 680 35 670 40 670 50 C 670 65 695 80 695 80 C 695 80 720 65 720 50 Z"
+          fill="#E040FB" stroke="#AA00FF" stroke-width="2"/>
+  </g>
+
+  <!-- Bottom hearts -->
+  <g>
+    <path d="M 280 950 C 280 940 270 935 265 935 C 260 935 255 940 255 945 C 255 940 250 935 245 935 C 240 935 230 940 230 950 C 230 965 255 980 255 980 C 255 980 280 965 280 950 Z"
+          fill="#18FFFF" stroke="#00E5FF" stroke-width="2"/>
+    <path d="M 500 965 C 500 958 493 954 489 954 C 485 954 481 958 481 963 C 481 958 477 954 473 954 C 469 954 462 958 462 965 C 462 976 481 988 481 988 C 481 988 500 976 500 965 Z"
+          fill="#76FF03" stroke="#64DD17" stroke-width="2"/>
+    <path d="M 720 950 C 720 940 710 935 705 935 C 700 935 695 940 695 945 C 695 940 690 935 685 935 C 680 935 670 940 670 950 C 670 965 695 980 695 980 C 695 980 720 965 720 950 Z"
+          fill="#FFEA00" stroke="#FFD600" stroke-width="2"/>
+  </g>
+
+  <!-- Left side hearts and stars -->
+  <g>
+    <path d="M 50 300 L 53 312 L 65 312 L 55 319 L 58 331 L 50 324 L 42 331 L 45 319 L 35 312 L 47 312 Z"
+          fill="#00E676" stroke="#00C853" stroke-width="2"/>
+    <path d="M 70 450 C 70 443 63 439 59 439 C 55 439 51 443 51 448 C 51 443 47 439 43 439 C 39 439 32 443 32 450 C 32 461 51 473 51 473 C 51 473 70 461 70 450 Z"
+          fill="#FF6E40" stroke="#FF3D00" stroke-width="2"/>
+    <path d="M 50 600 L 53 612 L 65 612 L 55 619 L 58 631 L 50 624 L 42 631 L 45 619 L 35 612 L 47 612 Z"
+          fill="#651FFF" stroke="#6200EA" stroke-width="2"/>
+    <path d="M 70 750 C 70 743 63 739 59 739 C 55 739 51 743 51 748 C 51 743 47 739 43 739 C 39 739 32 743 32 750 C 32 761 51 773 51 773 C 51 773 70 761 70 750 Z"
+          fill="#00B0FF" stroke="#0091EA" stroke-width="2"/>
+  </g>
+
+  <!-- Right side hearts and stars -->
+  <g>
+    <path d="M 950 300 L 953 312 L 965 312 L 955 319 L 958 331 L 950 324 L 942 331 L 945 319 L 935 312 L 947 312 Z"
+          fill="#FF6D00" stroke="#FF6F00" stroke-width="2"/>
+    <path d="M 968 450 C 968 443 961 439 957 439 C 953 439 949 443 949 448 C 949 443 945 439 941 439 C 937 439 930 443 930 450 C 930 461 949 473 949 473 C 949 473 968 461 968 450 Z"
+          fill="#DD2C00" stroke="#BF360C" stroke-width="2"/>
+    <path d="M 950 600 L 953 612 L 965 612 L 955 619 L 958 631 L 950 624 L 942 631 L 945 619 L 935 612 L 947 612 Z"
+          fill="#00BFA5" stroke="#00897B" stroke-width="2"/>
+    <path d="M 968 750 C 968 743 961 739 957 739 C 953 739 949 743 949 748 C 949 743 945 739 941 739 C 937 739 930 743 930 750 C 930 761 949 773 949 773 C 949 773 968 761 968 750 Z"
+          fill="#D500F9" stroke="#AA00FF" stroke-width="2"/>
+  </g>
+
+  <!-- Sparkle decorations -->
+  <g opacity="0.8">
+    <line x1="150" y1="150" x2="150" y2="170" stroke="#FFD700" stroke-width="3"/>
+    <line x1="140" y1="160" x2="160" y2="160" stroke="#FFD700" stroke-width="3"/>
+
+    <line x1="850" y1="150" x2="850" y2="170" stroke="#FF1744" stroke-width="3"/>
+    <line x1="840" y1="160" x2="860" y2="160" stroke="#FF1744" stroke-width="3"/>
+
+    <line x1="150" y1="850" x2="150" y2="870" stroke="#00E676" stroke-width="3"/>
+    <line x1="140" y1="860" x2="160" y2="860" stroke="#00E676" stroke-width="3"/>
+
+    <line x1="850" y1="850" x2="850" y2="870" stroke="#00B0FF" stroke-width="3"/>
+    <line x1="840" y1="860" x2="860" y2="860" stroke="#00B0FF" stroke-width="3"/>
+  </g>
+</svg>

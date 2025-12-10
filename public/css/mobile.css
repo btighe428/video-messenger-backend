@@ -1,0 +1,741 @@
+/**
+ * MOBILE-FIRST CSS FOUNDATION
+ * Yahoo Mail Video Messaging - Mobile Optimizations
+ * Principal Product Designer: Growth Team
+ *
+ * This file implements mobile-first design patterns including:
+ * - Touch-optimized interaction states
+ * - WCAG AAA touch target compliance (44×44px minimum)
+ * - Safe area inset support for notched devices
+ * - Adaptive performance tiers
+ * - Thumb-zone optimization
+ */
+
+/* ============================================================================
+   MOBILE-FIRST DESIGN TOKENS
+   ============================================================================ */
+
+:root {
+    /* Touch Target Standards */
+    --touch-target-min: 44px;           /* WCAG AAA minimum */
+    --touch-target-comfortable: 48px;    /* Recommended for primary actions */
+    --touch-target-primary: 56px;        /* Large primary actions */
+    --touch-spacing: 16px;               /* Minimum spacing between targets */
+    --touch-spacing-comfortable: 24px;   /* Comfortable spacing */
+
+    /* Safe Area Insets (iOS notch, Android gesture bar) */
+    --safe-area-top: env(safe-area-inset-top, 20px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+    --safe-area-left: env(safe-area-inset-left, 20px);
+    --safe-area-right: env(safe-area-inset-right, 20px);
+
+    /* Mobile Spacing Scale */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+
+    /* Mobile Typography Scale */
+    --text-xs: 0.75rem;     /* 12px */
+    --text-sm: 0.875rem;    /* 14px */
+    --text-base: 1rem;      /* 16px */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.25rem;     /* 20px */
+    --text-2xl: 1.5rem;     /* 24px */
+    --text-3xl: 2rem;       /* 32px */
+
+    /* Component-Specific Sizes */
+    --fab-size: 70px;                    /* Floating Action Button */
+    --bottom-sheet-peek: 80px;           /* Collapsed bottom sheet height */
+    --video-preview-mobile: 160px;       /* Mobile video preview size */
+    --video-preview-tablet: 200px;       /* Tablet video preview size */
+
+    /* Z-Index Scale (Mobile-Optimized) */
+    --z-base: 1;
+    --z-controls: 100;
+    --z-effects: 200;
+    --z-video-preview: 300;
+    --z-modals: 400;
+    --z-bottom-sheet: 500;
+    --z-toasts: 600;
+    --z-top: 999;
+}
+
+/* ============================================================================
+   TOUCH-OPTIMIZED INTERACTION STATES
+   ============================================================================ */
+
+/**
+ * Remove hover states on touch devices to prevent sticky hover
+ * This fixes the two-tap interaction pattern on mobile
+ */
+@media (hover: none) and (pointer: coarse) {
+    /* Disable all hover transforms on touch devices */
+    .btn-icon:hover:not(:disabled),
+    .btn-effect:hover:not(:disabled),
+    .btn-calibrate:hover,
+    .color-option:hover,
+    .glasses-option:hover,
+    .btn-envelope-action:hover,
+    .btn-send-envelope:hover,
+    .envelope-container:hover,
+    .btn-zoom:hover,
+    .btn-minimize:hover {
+        transform: none !important;
+        background: inherit !important;
+    }
+
+    /* Add active (pressed) states for immediate feedback */
+    .btn-icon:active:not(:disabled) {
+        transform: scale(0.95);
+    }
+
+    .btn-effect:active:not(:disabled) {
+        transform: scale(0.92);
+    }
+
+    .color-option:active {
+        transform: scale(0.9);
+    }
+
+    .glasses-option:active {
+        transform: scale(0.9);
+    }
+
+    .btn-envelope-action:active {
+        transform: scale(0.92);
+    }
+
+    .btn-send-envelope:active {
+        transform: scale(0.9);
+    }
+}
+
+/* ============================================================================
+   TOUCH TARGET SIZE COMPLIANCE (WCAG AAA)
+   ============================================================================ */
+
+/**
+ * Increase all touch targets to minimum 44×44px
+ * Priority fixes for critical mobile failures identified in audit
+ */
+
+/* Critical Fix 1: Envelope action buttons (36px → 48px) */
+.envelope-actions {
+    gap: var(--touch-spacing);  /* 16px spacing */
+    padding: var(--space-lg);   /* 16px padding */
+}
+
+.btn-envelope-action {
+    min-width: var(--touch-target-comfortable);  /* 48px */
+    min-height: var(--touch-target-comfortable); /* 48px */
+    width: var(--touch-target-comfortable);
+    height: var(--touch-target-comfortable);
+}
+
+/* Critical Fix 2: Calibration controls (36px → 44px) */
+.btn-calibrate {
+    min-width: var(--touch-target-min);  /* 44px */
+    min-height: var(--touch-target-min); /* 44px */
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+}
+
+/* Critical Fix 3: Color swatches (32px → 44px) */
+.color-option {
+    min-width: var(--touch-target-min);  /* 44px */
+    min-height: var(--touch-target-min); /* 44px */
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+}
+
+/* Critical Fix 4: Zoom/minimize buttons (36-40px → 44px) */
+.btn-zoom,
+.btn-minimize {
+    min-width: var(--touch-target-min);  /* 44px */
+    min-height: var(--touch-target-min); /* 44px */
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+}
+
+/* Ensure effect buttons maintain minimum size on mobile */
+.btn-effect {
+    min-width: var(--touch-target-min);  /* 44px */
+    min-height: var(--touch-target-min); /* 44px */
+}
+
+/* ============================================================================
+   SAFE AREA INSET SUPPORT (NOTCHED DEVICES)
+   ============================================================================ */
+
+/**
+ * Adapt positioning for iPhone notch, Android gesture bar
+ * Ensures controls don't overlap with system UI
+ */
+
+body {
+    /* Add padding to accommodate safe areas */
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+    padding-left: var(--safe-area-left);
+    padding-right: var(--safe-area-right);
+}
+
+/* Connection status - respect top notch */
+.connection-status {
+    top: calc(20px + var(--safe-area-top));
+}
+
+/* Remote video frame - respect top + left safe areas */
+.remote-video-frame {
+    top: calc(40px + var(--safe-area-top));
+    left: calc(40px + var(--safe-area-left));
+}
+
+/* Video preview dock - respect bottom + right safe areas */
+.video-preview-dock {
+    bottom: calc(40px + var(--safe-area-bottom));
+    right: calc(40px + var(--safe-area-right));
+}
+
+/* Controls dock - respect bottom + right safe areas */
+.controls-dock {
+    bottom: calc(400px + var(--safe-area-bottom));
+    right: calc(40px + var(--safe-area-right));
+}
+
+/* Video envelope - respect bottom + left safe areas */
+.video-envelope {
+    bottom: calc(40px + var(--safe-area-bottom));
+    left: calc(40px + var(--safe-area-left));
+}
+
+/* ============================================================================
+   TOUCH ACTION OPTIMIZATION
+   ============================================================================ */
+
+/**
+ * Eliminate 300ms tap delay on all interactive elements
+ * Prevent text selection during interaction
+ * Disable iOS tap highlight
+ */
+
+.btn-icon,
+.btn-effect,
+.btn-calibrate,
+.btn-zoom,
+.btn-minimize,
+.btn-send-envelope,
+.btn-envelope-action,
+.color-option,
+.glasses-option,
+.btn-login,
+button {
+    /* Eliminate tap delay */
+    touch-action: manipulation;
+
+    /* Prevent text selection */
+    user-select: none;
+    -webkit-user-select: none;
+
+    /* Remove tap highlight (we have custom active states) */
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+
+    /* Disable long-press callout */
+    -webkit-touch-callout: none;
+}
+
+/* Allow text selection in form inputs */
+.login-input,
+.envelope-select,
+input,
+textarea {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+/* ============================================================================
+   MOBILE-FIRST LAYOUT RESTRUCTURING
+   ============================================================================ */
+
+/**
+ * Base mobile styles (320px - 767px)
+ * Mobile-first approach: start with smallest viewport
+ */
+
+/* Default: Mobile layout */
+@media (max-width: 767px) {
+    /* Reduce video preview to conserve screen space */
+    .video-preview-dock {
+        width: var(--video-preview-mobile);   /* 160px */
+        height: var(--video-preview-mobile);  /* 160px */
+        bottom: calc(20px + var(--safe-area-bottom));
+        right: calc(20px + var(--safe-area-right));
+    }
+
+    /* Position controls in thumb-zone (bottom 1/3 of screen) */
+    .controls-dock {
+        bottom: calc(200px + var(--safe-area-bottom));
+        right: calc(20px + var(--safe-area-right));
+        gap: var(--space-md);  /* 12px */
+    }
+
+    /* Move effects to left side with adequate spacing */
+    .effects-dock {
+        bottom: calc(80px + var(--safe-area-bottom));
+        right: calc(200px + var(--safe-area-right));
+        gap: var(--space-md);  /* 12px */
+    }
+
+    /* Adjust primary control button sizes */
+    .btn-icon {
+        width: var(--touch-target-comfortable);   /* 48px */
+        height: var(--touch-target-comfortable);  /* 48px */
+    }
+
+    /* Scale timer for mobile */
+    .timer {
+        font-size: var(--text-xl);       /* 1.25rem / 20px */
+        padding: var(--space-sm) var(--space-lg);
+        min-width: 90px;
+    }
+
+    /* Compact remote video on mobile */
+    .remote-video-frame {
+        width: 140px;
+        height: 140px;
+        top: calc(20px + var(--safe-area-top));
+        left: calc(20px + var(--safe-area-left));
+    }
+
+    /* Compact connection status */
+    .connection-status {
+        top: calc(15px + var(--safe-area-top));
+        right: calc(15px + var(--safe-area-right));
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--text-xs);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+/* ============================================================================
+   THUMB-ZONE OPTIMIZATION
+   ============================================================================ */
+
+/**
+ * Position primary actions within natural thumb reach
+ * Based on Luke Wroblewski's thumb zone research
+ */
+
+@media (max-width: 767px) {
+    /* Primary FAB button - bottom center (optimal thumb position) */
+    .btn-record {
+        /* Increase size for primary action */
+        width: var(--touch-target-primary);   /* 56px */
+        height: var(--touch-target-primary);  /* 56px */
+    }
+
+    /* Join button - also primary action */
+    .btn-join {
+        width: var(--touch-target-primary);   /* 56px */
+        height: var(--touch-target-primary);  /* 56px */
+    }
+
+    /* Stop button - critical action, maintain large size */
+    .btn-stop {
+        width: var(--touch-target-primary);   /* 56px */
+        height: var(--touch-target-primary);  /* 56px */
+    }
+}
+
+/* ============================================================================
+   MODAL & OVERLAY MOBILE OPTIMIZATION
+   ============================================================================ */
+
+/**
+ * Full-screen modals on mobile for better focus
+ * Larger touch targets in playback controls
+ */
+
+@media (max-width: 767px) {
+    /* Full-width playback content */
+    .playback-content {
+        width: 100%;
+        max-width: 100%;
+        padding: var(--space-xl);
+        border-radius: 0;  /* Edge-to-edge on mobile */
+        height: 100vh;     /* Full viewport height */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Wrap playback controls on mobile */
+    .playback-controls {
+        flex-wrap: wrap;
+        gap: var(--touch-spacing);  /* 16px */
+    }
+
+    /* Increase playback control sizes */
+    .playback-controls .btn-icon {
+        width: var(--touch-target-comfortable);   /* 48px */
+        height: var(--touch-target-comfortable);  /* 48px */
+    }
+
+    /* Full-width login modal */
+    .login-content {
+        width: 100%;
+        max-width: 100%;
+        padding: var(--space-2xl);
+        border-radius: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Larger login inputs for easier typing */
+    .login-input {
+        padding: var(--space-lg) var(--space-xl);
+        font-size: var(--text-base);
+        min-height: var(--touch-target-min);  /* 44px minimum */
+    }
+
+    /* Larger login button */
+    .btn-login {
+        padding: var(--space-lg) var(--space-2xl);
+        font-size: var(--text-lg);
+        min-height: var(--touch-target-primary);  /* 56px */
+    }
+}
+
+/* ============================================================================
+   PICKER MOBILE OPTIMIZATION
+   ============================================================================ */
+
+/**
+ * Transform picker panels into bottom sheets on mobile
+ * Better UX than floating panels
+ */
+
+@media (max-width: 767px) {
+    /* Glasses picker - bottom sheet pattern */
+    .glasses-picker {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 60vh;
+        border-radius: 24px 24px 0 0;  /* Rounded top corners only */
+        padding: var(--space-xl);
+        z-index: var(--z-bottom-sheet);
+
+        /* iOS-style bottom sheet */
+        padding-bottom: calc(var(--space-xl) + var(--safe-area-bottom));
+    }
+
+    /* Add handle indicator for bottom sheet */
+    .glasses-picker::before {
+        content: '';
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+    }
+
+    /* Background color picker - bottom sheet */
+    .bg-color-picker {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 30vh;
+        border-radius: 24px 24px 0 0;
+        padding: var(--space-xl);
+        z-index: var(--z-bottom-sheet);
+        flex-direction: row;  /* Horizontal on mobile */
+        justify-content: center;
+        flex-wrap: wrap;
+        padding-bottom: calc(var(--space-xl) + var(--safe-area-bottom));
+    }
+
+    .bg-color-picker::before {
+        content: '';
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+    }
+
+    /* Position calibrator - inline with effects */
+    .position-calibrator {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin-top: var(--space-md);
+    }
+}
+
+/* ============================================================================
+   GESTURE SUPPORT INDICATORS
+   ============================================================================ */
+
+/**
+ * Visual cues for swipe gestures on mobile
+ */
+
+@media (max-width: 767px) {
+    /* Add swipe hint to bottom sheets */
+    .glasses-picker,
+    .bg-color-picker {
+        /* Swipe handle already added via ::before pseudo-element */
+    }
+
+    /* Add visual affordance for draggable elements */
+    .draggable-ui-container {
+        cursor: grab;
+    }
+
+    .draggable-ui-container.dragging {
+        cursor: grabbing;
+    }
+}
+
+/* ============================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================================ */
+
+/**
+ * Reduce animation complexity on mobile for battery life
+ * Use CSS containment for better rendering performance
+ */
+
+@media (max-width: 767px) {
+    /* Simplify animations on mobile */
+    .btn-icon,
+    .btn-effect,
+    .color-option,
+    .glasses-option {
+        transition: transform 0.2s ease, background 0.2s ease;
+        /* Removed box-shadow transitions (expensive on mobile) */
+    }
+
+    /* CSS containment for video elements */
+    .video-frame,
+    .video-preview-dock,
+    .remote-video-frame {
+        contain: layout style paint;
+        will-change: transform;
+    }
+
+    /* Reduce backdrop-filter blur on low-end devices */
+    @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+        .login-modal,
+        .playback-modal,
+        .login-content,
+        .playback-content {
+            backdrop-filter: none;
+            background: rgba(0, 0, 0, 0.95);  /* Solid fallback */
+        }
+    }
+}
+
+/* ============================================================================
+   LANDSCAPE ORIENTATION OPTIMIZATIONS
+   ============================================================================ */
+
+/**
+ * Adapt layout for landscape on mobile devices
+ */
+
+@media (max-width: 767px) and (orientation: landscape) {
+    /* Reduce vertical spacing in landscape */
+    .controls-dock {
+        bottom: calc(100px + var(--safe-area-bottom));
+    }
+
+    .effects-dock {
+        bottom: calc(60px + var(--safe-area-bottom));
+    }
+
+    /* Smaller video preview in landscape to maximize content area */
+    .video-preview-dock {
+        width: 120px;
+        height: 120px;
+    }
+
+    .remote-video-frame {
+        width: 100px;
+        height: 100px;
+    }
+
+    /* Compact timer in landscape */
+    .timer {
+        font-size: var(--text-base);
+        padding: var(--space-xs) var(--space-md);
+        min-width: 70px;
+    }
+}
+
+/* ============================================================================
+   TABLET OPTIMIZATIONS (768px - 1024px)
+   ============================================================================ */
+
+/**
+ * Tablet-specific layouts - hybrid of mobile and desktop
+ */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    /* Medium-sized video preview for tablets */
+    .video-preview-dock {
+        width: var(--video-preview-tablet);   /* 200px */
+        height: var(--video-preview-tablet);  /* 200px */
+    }
+
+    /* Maintain comfortable touch targets on tablets */
+    .btn-icon {
+        width: var(--touch-target-comfortable);   /* 48px */
+        height: var(--touch-target-comfortable);  /* 48px */
+    }
+
+    /* Two-column layout for modals on tablets */
+    .playback-content {
+        max-width: 600px;
+        border-radius: 24px;
+        padding: var(--space-2xl);
+    }
+
+    .login-content {
+        max-width: 450px;
+        border-radius: 24px;
+        padding: var(--space-3xl);
+    }
+}
+
+/* ============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================================================ */
+
+/**
+ * Respect user motion preferences
+ * Enhance focus visibility for keyboard navigation
+ */
+
+/* Reduce motion for users with vestibular disorders */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Enhanced focus indicators for keyboard navigation */
+.btn-icon:focus-visible,
+.btn-effect:focus-visible,
+.btn-zoom:focus-visible,
+.btn-minimize:focus-visible,
+.btn-send-envelope:focus-visible,
+.btn-envelope-action:focus-visible,
+.color-option:focus-visible,
+.glasses-option:focus-visible,
+.login-input:focus-visible,
+.btn-login:focus-visible {
+    outline: 3px solid #8b5cf6;
+    outline-offset: 4px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn-icon,
+    .btn-effect,
+    .color-option {
+        border: 2px solid currentColor;
+    }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/* Touch-optimized spacing utilities */
+.touch-spacing { gap: var(--touch-spacing); }
+.touch-spacing-comfortable { gap: var(--touch-spacing-comfortable); }
+
+/* Touch target utilities */
+.touch-target {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+}
+.touch-target-comfortable {
+    min-width: var(--touch-target-comfortable);
+    min-height: var(--touch-target-comfortable);
+}
+.touch-target-primary {
+    min-width: var(--touch-target-primary);
+    min-height: var(--touch-target-primary);
+}
+
+/* Thumb-zone positioning */
+.thumb-zone {
+    position: fixed;
+    bottom: var(--safe-area-bottom);
+}
+
+/* Mobile-only visibility */
+.mobile-only {
+    display: block;
+}
+
+@media (min-width: 768px) {
+    .mobile-only {
+        display: none;
+    }
+}
+
+/* Desktop-only visibility */
+.desktop-only {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .desktop-only {
+        display: block;
+    }
+}
+
+/* ============================================================================
+   PRINT STYLES (BONUS)
+   ============================================================================ */
+
+@media print {
+    /* Hide interactive elements when printing */
+    .draggable-ui-container,
+    .controls-dock,
+    .effects-dock,
+    .btn-zoom,
+    .btn-minimize,
+    .video-envelope,
+    .connection-status {
+        display: none !important;
+    }
+}
