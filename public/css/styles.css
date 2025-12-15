@@ -125,15 +125,11 @@ body.bg-hidden {
     inset: 0;
     z-index: 1000;
     user-select: none;
-    display: grid;
-    grid-template-columns: 72px 1fr;
-    grid-template-rows: auto 1fr auto;
-    grid-template-areas:
-        "toolbar header"
-        "toolbar video"
-        "toolbar footer";
-    padding: 24px;
-    gap: 16px;
+    pointer-events: none;
+}
+
+.draggable-ui-container > * {
+    pointer-events: auto;
 }
 
 /* Drag Handle - Hidden by default, show on hover */
@@ -143,20 +139,21 @@ body.bg-hidden {
 
 /* ==================== VIDEO AREA ==================== */
 
-/* Video Preview Container - right side, vertically centered */
+/* Video Preview Container - bottom-right corner */
 .video-preview-dock {
-    grid-area: video;
-    justify-self: end;
-    align-self: center;
-    position: relative;
-    width: 360px;
-    height: 360px;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 200px;
+    height: 200px;
     transition: all 0.3s var(--ease-ios);
+    z-index: 1001;
+    cursor: grab;
 }
 
 .video-preview-dock.zoomed {
-    width: 540px;
-    height: 540px;
+    width: 320px;
+    height: 320px;
 }
 
 .video-frame {
@@ -255,19 +252,21 @@ body.bg-hidden {
 }
 
 /* ==================== EFFECTS TOOLBAR ==================== */
-/* Left edge of screen, vertical toolbar */
+/* Bottom center of screen, horizontal toolbar */
 
 .effects-dock {
-    grid-area: toolbar;
-    position: relative;
-    align-self: center;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px 16px;
     background: var(--bg-main);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
 }
 
 .effects-dock .btn-effect {
@@ -279,18 +278,18 @@ body.bg-hidden {
 
 .bg-color-picker {
     position: fixed;
-    left: 104px;
-    top: 50%;
-    transform: translateY(-50%);
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1002;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
-    padding: 8px;
+    padding: 8px 12px;
     background: var(--bg-main);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-full);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    animation: slideIn 0.2s ease-out;
+    animation: slideUp 0.2s ease-out;
 }
 
 @keyframes slideIn {
@@ -301,6 +300,17 @@ body.bg-hidden {
     to {
         opacity: 1;
         transform: translateX(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
     }
 }
 

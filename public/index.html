@@ -803,16 +803,13 @@
                 currentMode = 'video';
                 setActiveButton(videoToggleBtn);
 
-                // Show video UI in upper right, make draggable
+                // Show video UI (positioned via CSS at bottom-right)
                 if (draggableUI) draggableUI.classList.remove('hidden');
                 if (videoPreviewDock) {
                     videoPreviewDock.classList.remove('hidden');
-                    // Position in upper right
-                    videoPreviewDock.style.position = 'fixed';
-                    videoPreviewDock.style.top = '80px';
-                    videoPreviewDock.style.right = '24px';
-                    videoPreviewDock.style.left = 'auto';
-                    videoPreviewDock.style.bottom = 'auto';
+                    // Clear any inline styles to use CSS positioning (bottom-right)
+                    videoPreviewDock.style.top = '';
+                    videoPreviewDock.style.left = '';
                 }
                 // Hide old studio video preview
                 if (studioVideoPreview) studioVideoPreview.classList.add('hidden');
