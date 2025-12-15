@@ -86,8 +86,8 @@ class VideoRecorder {
         this.setupDragging();
         this.setupRemoteDragging();
 
-        // Initialize camera on page load
-        this.initializeCamera();
+        // DON'T initialize camera on page load - wait for Video mode
+        // this.initializeCamera();
 
         // Initialize particle system
         if (window.ParticleSystem) {
@@ -884,5 +884,5 @@ class VideoRecorder {
 
 // Initialize the recorder when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new VideoRecorder();
+    window.videoRecorder = new VideoRecorder();
 });

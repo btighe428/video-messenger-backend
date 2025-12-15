@@ -1659,57 +1659,66 @@ body.bg-hidden {
     letter-spacing: 0.5px;
 }
 
-/* Background Toggle Button */
-.bg-toggle-btn {
+/* Top Navigation Container - Centered */
+.top-nav-container {
     position: fixed;
     top: 20px;
-    left: 180px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
+    gap: 8px;
     background: var(--bg-main);
-    color: var(--text-primary);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 6px;
     border-radius: var(--radius-full);
-    border: 1px solid var(--border-dark);
-    backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-md);
-    z-index: 1100;
-    cursor: pointer;
-    transition: all 0.3s var(--ease-ios);
-    font-family: var(--font-family);
-    font-size: var(--font-size-caption);
-    font-weight: var(--font-weight-medium);
-}
-
-.bg-toggle-btn:hover {
-    transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--primary-main);
+    z-index: 1100;
 }
 
-.bg-toggle-btn:active {
-    transform: translateY(0);
+.top-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: var(--radius-full);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
-.bg-toggle-btn svg {
+.top-nav-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.top-nav-btn.active {
+    background: var(--text-primary);
+    color: white;
+}
+
+.top-nav-btn svg {
     width: 20px;
     height: 20px;
+    flex-shrink: 0;
 }
 
-.bg-toggle-text {
-    font-weight: var(--font-weight-medium);
-    letter-spacing: 0.5px;
+.top-nav-btn.active svg {
+    stroke: white;
 }
 
-body.bg-hidden .bg-toggle-btn {
-    background: var(--text-primary);
-    color: var(--primary-contrast);
-    border-color: var(--text-primary);
+/* Video preview dock grab cursor */
+.video-preview-dock {
+    cursor: grab;
 }
 
-body.bg-hidden .bg-toggle-btn svg {
-    stroke: var(--primary-contrast);
+.video-preview-dock:active {
+    cursor: grabbing;
 }
 
 .hidden {

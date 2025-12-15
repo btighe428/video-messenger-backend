@@ -467,9 +467,14 @@ io.on('connection', (socket) => {
 
     // Canvas sync request (new user asking for current state)
     socket.on('studio-canvas-sync-request', (data) => {
-        if (!socket.inStudio) return;
+        console.log(`[SYNC] Canvas sync request from ${socket.id}, inStudio: ${socket.inStudio}`);
+        if (!socket.inStudio) {
+            console.log(`[SYNC] Rejected - user not in studio`);
+            return;
+        }
 
         // Broadcast to all other users that someone needs the canvas state
+        console.log(`[SYNC] Broadcasting sync request to other studio users`);
         socket.broadcast.emit('studio-canvas-sync-request', {
             requesterId: data.requesterId
         });
@@ -477,10 +482,15 @@ io.on('connection', (socket) => {
 
     // Canvas sync response (sending full canvas state)
     socket.on('studio-canvas-sync', (data) => {
-        if (!socket.inStudio) return;
+        console.log(`[SYNC] Canvas sync response from ${socket.id}, target: ${data.targetId}, objects: ${data.objects?.length || 0}`);
+        if (!socket.inStudio) {
+            console.log(`[SYNC] Rejected - user not in studio`);
+            return;
+        }
 
         // Send to specific target or broadcast
         if (data.targetId) {
+            console.log(`[SYNC] Sending sync to specific target: ${data.targetId}`);
             io.to(data.targetId).emit('studio-canvas-sync', {
                 socketId: socket.id,
                 targetId: data.targetId,
@@ -488,6 +498,7 @@ io.on('connection', (socket) => {
                 nextObjectId: data.nextObjectId
             });
         } else {
+            console.log(`[SYNC] Broadcasting sync to all studio users`);
             socket.broadcast.emit('studio-canvas-sync', {
                 socketId: socket.id,
                 objects: data.objects,
@@ -528,3 +539,6 @@ process.on('SIGINT', () => {
     console.log('\nSIGINT signal received: closing HTTP server');
     process.exit(0);
 });
+
+// Export for Vercel
+module.exports = app;

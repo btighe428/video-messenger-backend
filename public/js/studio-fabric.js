@@ -104,13 +104,16 @@ class StudioFabric {
     }
 
     autoConnectSocket() {
-        // Check for existing socket connection
+        // Check for existing socket connection (try both window.socket and connectionManager)
         const checkSocket = () => {
-            if (window.socket && window.socket.connected) {
-                this.setSocket(window.socket);
-                console.log('Studio Fabric connected to socket');
+            const socket = window.socket || window.connectionManager?.socket;
+            if (socket && socket.connected) {
+                this.setSocket(socket);
+                console.log('Studio Fabric connected to socket:', socket.id);
             } else {
                 // Retry in 500ms
+                console.log('Socket not ready, retrying... (window.socket:', !!window.socket,
+                    ', connectionManager:', !!window.connectionManager?.socket, ')');
                 setTimeout(checkSocket, 500);
             }
         };
@@ -662,7 +665,7 @@ class StudioFabric {
     async downloadAsJpg() {
         const dataUrl = await this.getCanvasDataURL('jpeg', 0.92);
         const link = document.createElement('a');
-        link.download = `studio-creation-${Date.now()}.jpg`;
+        link.download = `Yahoo-Fuchsia-Creation-${Date.now()}.jpg`;
         link.href = dataUrl;
         link.click();
     }
@@ -752,7 +755,7 @@ class StudioFabric {
                             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                         ">
                         <div style="margin-top: 8px; font-size: 13px; color: #5b636a;">
-                            studio-creation.jpg · ${fileSizeKB} KB
+                            Yahoo-Fuchsia-Creation.jpg · ${fileSizeKB} KB
                         </div>
                     </div>
 
@@ -940,7 +943,7 @@ class StudioFabric {
         // Download JPG
         modal.querySelector('#downloadJpgBtn').onclick = async () => {
             const link = document.createElement('a');
-            link.download = `studio-creation-${Date.now()}.jpg`;
+            link.download = `Yahoo-Fuchsia-Creation-${Date.now()}.jpg`;
             link.href = imageDataUrl;
             link.click();
 
@@ -1003,7 +1006,7 @@ class StudioFabric {
 
             // First download the image so user can attach it
             const link = document.createElement('a');
-            link.download = `studio-creation-${Date.now()}.jpg`;
+            link.download = `Yahoo-Fuchsia-Creation-${Date.now()}.jpg`;
             link.href = imageDataUrl;
             link.click();
 
@@ -1282,8 +1285,17 @@ class StudioFabric {
         });
 
         // Full canvas sync (for new users joining)
+        // Handle server-initiated state request (sent on studio-join)
+        this.socket.on('studio-state-request', (data) => {
+            if (!this.isActive) return;
+            console.log('Received studio-state-request from:', data.requesterId);
+            this.sendCanvasState(data.requesterId);
+        });
+
+        // Handle client-initiated sync request (backup mechanism)
         this.socket.on('studio-canvas-sync-request', (data) => {
-            // Someone is requesting our canvas state
+            if (!this.isActive) return;
+            console.log('Received studio-canvas-sync-request from:', data.requesterId);
             this.sendCanvasState(data.requesterId);
         });
 
@@ -1301,18 +1313,28 @@ class StudioFabric {
     requestCanvasSync() {
         if (!this.socket) return;
 
+        console.log('Requesting canvas sync from other users...');
         this.socket.emit('studio-canvas-sync-request', {
             requesterId: this.socket.id
         });
     }
 
     sendCanvasState(targetId) {
-        if (!this.socket || !this.canvas) return;
+        if (!this.socket || !this.canvas || !this.isActive) {
+            console.log('sendCanvasState skipped:', {
+                hasSocket: !!this.socket,
+                hasCanvas: !!this.canvas,
+                isActive: this.isActive
+            });
+            return;
+        }
 
         const objects = this.canvas.getObjects().map(obj => ({
             objectId: obj.objectId,
             json: obj.toJSON(['objectId'])
         }));
+
+        console.log(`Sending canvas state to ${targetId}: ${objects.length} objects`);
 
         this.socket.emit('studio-canvas-sync', {
             targetId,
@@ -1323,7 +1345,12 @@ class StudioFabric {
 
     receiveCanvasSync(data) {
         // Only process if this sync is for us or broadcast
-        if (data.targetId && data.targetId !== this.socket.id) return;
+        if (data.targetId && data.targetId !== this.socket.id) {
+            console.log('Ignoring canvas sync - not for us:', data.targetId, 'vs', this.socket.id);
+            return;
+        }
+
+        console.log(`Receiving canvas sync: ${data.objects?.length || 0} objects from ${data.socketId}`);
 
         // Clear current canvas
         this.canvas.clear();
@@ -1336,19 +1363,23 @@ class StudioFabric {
 
         // Add all objects
         if (data.objects && data.objects.length > 0) {
+            let loadedCount = 0;
             data.objects.forEach(item => {
                 fabric.util.enlivenObjects([item.json], (objects) => {
                     objects.forEach(obj => {
                         obj._addedByRemote = true;
                         obj.set('objectId', item.objectId);
                         this.canvas.add(obj);
+                        loadedCount++;
+                        console.log(`Loaded object ${loadedCount}/${data.objects.length}: ${obj.type}`);
                     });
                     this.canvas.renderAll();
                 });
             });
+        } else {
+            console.log('Canvas sync received but no objects to load');
+            this.canvas.renderAll();
         }
-
-        console.log(`Received canvas sync: ${data.objects?.length || 0} objects`);
     }
 
     broadcastCursorPosition(x, y) {
@@ -1517,18 +1548,29 @@ class StudioFabric {
             this.updateZoomDisplay();
 
             // Join studio mode on server (required for sync)
-            if (this.socket && this.socket.connected) {
-                this.socket.emit('studio-join');
-                console.log('Emitted studio-join');
-
-                // Request sync from other users after joining
-                setTimeout(() => {
-                    this.requestCanvasSync();
-                }, 100);
-            }
+            this.joinStudioWithRetry();
         });
 
         console.log('Studio Fabric activated');
+    }
+
+    joinStudioWithRetry(attempts = 0) {
+        const maxAttempts = 10;
+
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('studio-join');
+            console.log('Emitted studio-join (attempt ' + (attempts + 1) + ')');
+
+            // Request sync from other users after joining
+            setTimeout(() => {
+                this.requestCanvasSync();
+            }, 100);
+        } else if (attempts < maxAttempts) {
+            console.log(`Socket not ready, retrying studio-join in 500ms (attempt ${attempts + 1}/${maxAttempts})`);
+            setTimeout(() => this.joinStudioWithRetry(attempts + 1), 500);
+        } else {
+            console.error('Failed to join studio - socket not connected after', maxAttempts, 'attempts');
+        }
     }
 
     deactivate() {
