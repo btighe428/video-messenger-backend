@@ -560,4 +560,20 @@ function initializeConnectionManager() {
 
 window.addEventListener('DOMContentLoaded', () => {
     initializeConnectionManager();
+    initializeMuteButton();
 });
+
+// Mute/Unmute functionality for remote video
+function initializeMuteButton() {
+    const muteBtn = document.getElementById('muteBtn');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    if (!muteBtn || !remoteVideo) return;
+
+    muteBtn.addEventListener('click', () => {
+        remoteVideo.muted = !remoteVideo.muted;
+        muteBtn.classList.toggle('muted', remoteVideo.muted);
+        muteBtn.title = remoteVideo.muted ? 'Unmute' : 'Mute';
+        console.log('Remote video muted:', remoteVideo.muted);
+    });
+}
