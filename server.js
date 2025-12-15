@@ -40,8 +40,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files from the public directory
-app.use(express.static('public', {
+// Serve static files from the public directory (use absolute path for Vercel)
+app.use(express.static(path.join(__dirname, 'public'), {
     etag: false,
     lastModified: false
 }));
@@ -122,8 +122,8 @@ app.post('/upload', upload.single('video'), (req, res) => {
     }
 });
 
-// Serve uploaded files
-app.use('/uploads', express.static('uploads'));
+// Serve uploaded files (use absolute path for Vercel)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // List all uploaded videos (optional - for viewing all videos)
 app.get('/api/videos', (req, res) => {
