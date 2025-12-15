@@ -175,6 +175,37 @@
             <span class="btn-label">Premium</span>
             <span class="lock-badge">🔐</span>
         </button>
+
+        <!-- Divider -->
+        <div class="toolbar-divider"></div>
+
+        <!-- Connect Button -->
+        <button id="connectBtn" class="btn-icon btn-effect btn-connect" title="Connect">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span class="btn-label">Connect</span>
+            <span class="connect-status-dot"></span>
+        </button>
+
+        <!-- Record Button -->
+        <button id="startBtn" class="btn-icon btn-effect btn-record" title="Start Recording">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+            <span class="btn-label">Record</span>
+        </button>
+
+        <!-- Stop Button -->
+        <button id="stopBtn" class="btn-icon btn-effect btn-stop" disabled title="Stop Recording">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            </svg>
+            <span class="btn-label">Stop</span>
+        </button>
     </div>
 
         <!-- Background Color Picker -->
@@ -325,30 +356,8 @@
             </div>
         </div>
 
-        <!-- Minimal Controls -->
-        <div class="controls-dock">
-        <button id="joinVideoBtn" class="btn-icon btn-join" title="Join Video Chat">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-        </button>
-        <span id="timer" class="timer">00:00</span>
-        <div class="control-buttons">
-            <button id="startBtn" class="btn-icon btn-record" title="Start Recording">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="8"></circle>
-                </svg>
-            </button>
-            <button id="stopBtn" class="btn-icon btn-stop" disabled title="Stop Recording">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="7" y="7" width="10" height="10" rx="2"></rect>
-                </svg>
-            </button>
-        </div>
-        </div>
+        <!-- Timer moved to bottom toolbar -->
+        <span id="timer" class="timer hidden">00:00</span>
     </div>
 
     <!-- Studio Mode Container -->

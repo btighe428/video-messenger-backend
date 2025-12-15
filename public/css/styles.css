@@ -273,6 +273,71 @@ body.bg-hidden {
     position: relative;
 }
 
+/* Toolbar Divider */
+.toolbar-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border-main);
+    margin: 0 4px;
+    align-self: center;
+}
+
+/* Connect Button */
+.btn-connect {
+    position: relative;
+}
+
+.connect-status-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: 2px solid var(--bg-main);
+}
+
+.btn-connect.connected .connect-status-dot {
+    background: #22c55e;
+}
+
+/* Record Button */
+.btn-record svg {
+    color: #ef4444;
+    fill: #ef4444;
+}
+
+.btn-record:hover svg {
+    color: #dc2626;
+    fill: #dc2626;
+}
+
+.btn-record.recording {
+    animation: pulse-record 1s ease-in-out infinite;
+}
+
+@keyframes pulse-record {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Stop Button */
+.btn-stop svg {
+    color: var(--text-secondary);
+    fill: var(--text-secondary);
+}
+
+.btn-stop:not(:disabled):hover svg {
+    color: #ef4444;
+    fill: #ef4444;
+}
+
+.btn-stop:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* ==================== PICKERS ==================== */
 /* Slide out from toolbar, positioned to not overlap video */
 

@@ -52,12 +52,20 @@ class ConnectionManager {
         const joinVideoBtn = document.getElementById('joinVideoBtn');
         if (joinVideoBtn) {
             joinVideoBtn.addEventListener('click', () => {
-                // Skip login modal, join directly
                 this.login('no-password-required', 'User-' + Math.floor(Math.random() * 1000));
+            });
+        }
 
-                /* COMMENTED OUT - Authentication flow
-                this.loginModal.classList.remove('hidden');
-                */
+        // Connect button in toolbar - Direct join (no auth)
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => {
+                if (this.isLoggedIn) {
+                    // Already connected - could add disconnect logic here
+                    console.log('Already connected');
+                } else {
+                    this.login('no-password-required', 'User-' + Math.floor(Math.random() * 1000));
+                }
             });
         }
 
@@ -136,6 +144,14 @@ class ConnectionManager {
             this.loginModal.classList.add('hidden');
             this.showStatus('Connected! Waiting for other users...', 'success');
             console.log('Login successful, socket ID:', this.mySocketId);
+
+            // Update connect button state
+            const connectBtn = document.getElementById('connectBtn');
+            if (connectBtn) {
+                connectBtn.classList.add('connected');
+                const label = connectBtn.querySelector('.btn-label');
+                if (label) label.textContent = 'Connected';
+            }
         });
 
         this.socket.on('login-failed', (data) => {
