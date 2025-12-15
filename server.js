@@ -14,7 +14,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 const io = new Server(server, {
     cors: {
-        origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app'],
+        origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app', 'https://video-messaging-v4-adwalnctx-brians-projects-61d69cd7.vercel.app'],
         methods: ["GET", "POST"],
         credentials: true
     },
@@ -27,7 +27,7 @@ const io = new Server(server, {
 
 // Enable CORS for frontend domain
 app.use(cors({
-    origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app'],
+    origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app', 'https://video-messaging-v4-adwalnctx-brians-projects-61d69cd7.vercel.app'],
     credentials: true
 }));
 
