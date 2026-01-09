@@ -330,6 +330,12 @@ class ConnectionManager {
                 this.remoteStream.addTrack(event.track);
                 console.log('Remote stream tracks:', this.remoteStream.getTracks().length);
                 this.remoteVideoFrame.classList.remove('hidden');
+                // Update remote user label with their username
+                const remoteUser = this.connectedUsers.find(u => u.socketId === this.remoteSocketId);
+                const remoteLabel = document.getElementById('remoteUserLabel');
+                if (remoteLabel && remoteUser) {
+                    remoteLabel.textContent = remoteUser.username;
+                }
                 // Update status to Connected when we receive tracks
                 this.updateConnectionStatus('connected', 'Video chat active');
             };
@@ -430,6 +436,12 @@ class ConnectionManager {
                 this.remoteStream.addTrack(event.track);
                 console.log('Remote stream tracks:', this.remoteStream.getTracks().length);
                 this.remoteVideoFrame.classList.remove('hidden');
+                // Update remote user label with their username
+                const remoteUser = this.connectedUsers.find(u => u.socketId === this.remoteSocketId);
+                const remoteLabel = document.getElementById('remoteUserLabel');
+                if (remoteLabel && remoteUser) {
+                    remoteLabel.textContent = remoteUser.username;
+                }
                 // Update status to Connected when we receive tracks
                 this.updateConnectionStatus('connected', 'Video chat active');
             };
