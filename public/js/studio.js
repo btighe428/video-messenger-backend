@@ -1892,7 +1892,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStudioConnectionStatus('connecting');
 
                     // Login without password (same as joinVideoBtn)
-                    window.connectionManager.login('no-password-required', 'User-' + Math.floor(Math.random() * 1000));
+                    window.connectionManager.login('no-password-required', generateRandomUsername());
                     // Update button state and socket after login
                     const waitForLogin = setInterval(() => {
                         if (window.connectionManager.isLoggedIn && window.connectionManager.socket) {
@@ -1927,7 +1927,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==================== AUTO-START STUDIO MODE ====================
     // Default to studio view and auto-connect on page load
-    setTimeout(() => {
+    setTimeout(async () => {
         console.log('🚀 Auto-starting Studio mode...');
 
         // 1. Auto-open Studio view by triggering the toggle button click
@@ -1937,7 +1937,21 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('✓ Studio view opened');
         }
 
-        // 2. Auto-connect after a short delay to let Studio initialize
+        // 2. Initialize camera FIRST before connecting
+        console.log('📷 Initializing camera...');
+        try {
+            if (window.videoRecorder && !window.videoRecorder.stream) {
+                await window.videoRecorder.initializeCamera();
+                console.log('✓ Camera initialized');
+            } else if (window.videoRecorder?.stream) {
+                console.log('✓ Camera already initialized');
+            }
+        } catch (err) {
+            console.log('⚠ Camera initialization failed:', err.message);
+            // Continue anyway - can still receive video
+        }
+
+        // 3. Auto-connect after camera is ready
         setTimeout(() => {
             console.log('🔌 Auto-connecting...');
 
@@ -1946,8 +1960,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Update UI to show connecting state
                     updateStudioConnectionStatus('connecting');
 
-                    // Login with auto-generated username
-                    const autoUsername = 'User-' + Math.floor(Math.random() * 1000);
+                    // Login with auto-generated username (Color-Animal format)
+                    const autoUsername = generateRandomUsername();
                     window.connectionManager.login('no-password-required', autoUsername);
 
                     // Wait for login to complete and set socket
@@ -1976,7 +1990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 console.log('⚠ ConnectionManager not available for auto-connect');
             }
-        }, 500); // Wait 500ms for Studio to initialize before connecting
+        }, 500); // Wait 500ms after camera for Studio to initialize before connecting
 
     }, 100); // Small delay to ensure DOM is fully ready
 });

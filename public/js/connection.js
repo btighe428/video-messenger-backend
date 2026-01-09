@@ -3,6 +3,23 @@ const BACKEND_URL = window.location.hostname.includes('localhost')
     ? 'http://localhost:3000'
     : 'https://video-messenger-backend.onrender.com'; // Render backend URL
 
+// Random username generator (Color + Animal)
+function generateRandomUsername() {
+    const colors = [
+        'Red', 'Blue', 'Green', 'Pink', 'Purple', 'Orange', 'Yellow', 'Teal',
+        'Coral', 'Mint', 'Gold', 'Silver', 'Crimson', 'Azure', 'Violet', 'Jade',
+        'Ruby', 'Amber', 'Indigo', 'Cyan', 'Magenta', 'Lime', 'Navy', 'Plum'
+    ];
+    const animals = [
+        'Panda', 'Tiger', 'Eagle', 'Dolphin', 'Fox', 'Wolf', 'Bear', 'Lion',
+        'Hawk', 'Owl', 'Falcon', 'Raven', 'Phoenix', 'Dragon', 'Panther', 'Cobra',
+        'Jaguar', 'Lynx', 'Otter', 'Badger', 'Moose', 'Bison', 'Rhino', 'Koala'
+    ];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const animal = animals[Math.floor(Math.random() * animals.length)];
+    return `${color}-${animal}`;
+}
+
 // WebRTC Connection Manager
 class ConnectionManager {
     constructor() {
@@ -52,7 +69,7 @@ class ConnectionManager {
         const joinVideoBtn = document.getElementById('joinVideoBtn');
         if (joinVideoBtn) {
             joinVideoBtn.addEventListener('click', () => {
-                this.login('no-password-required', 'User-' + Math.floor(Math.random() * 1000));
+                this.login('no-password-required', generateRandomUsername());
             });
         }
 
@@ -64,7 +81,7 @@ class ConnectionManager {
                     // Already connected - could add disconnect logic here
                     console.log('Already connected');
                 } else {
-                    this.login('no-password-required', 'User-' + Math.floor(Math.random() * 1000));
+                    this.login('no-password-required', generateRandomUsername());
                 }
             });
         }
@@ -145,6 +162,9 @@ class ConnectionManager {
             this.showStatus('Connected! Waiting for other users...', 'success');
             console.log('Login successful, socket ID:', this.mySocketId);
 
+            // Update connection status indicator
+            this.updateConnectionStatus('waiting', 'Waiting for others to join');
+
             // Update connect button state
             const connectBtn = document.getElementById('connectBtn');
             if (connectBtn) {
@@ -156,6 +176,7 @@ class ConnectionManager {
 
         this.socket.on('login-failed', (data) => {
             this.showStatus(data.message, 'error');
+            this.updateConnectionStatus('error', data.message);
         });
 
         this.socket.on('users-list', (users) => {
@@ -163,15 +184,23 @@ class ConnectionManager {
             console.log('My socket ID:', this.mySocketId);
             this.connectedUsers = users;
             this.updateUsersList();
+
+            // Update status based on users count
+            if (users.length > 0) {
+                this.updateConnectionStatus('user-joined', `${users.length} user(s) online`);
+            }
+
             // If there are other users, connect to the first one
             // Only initiate if our socket ID is greater (prevents both users from initiating)
             if (users.length > 0) {
                 console.log('Comparing socket IDs:', this.mySocketId, '>', users[0].socketId, '=', this.mySocketId > users[0].socketId);
                 if (this.mySocketId > users[0].socketId) {
                     console.log('I will initiate connection');
+                    this.updateConnectionStatus('connecting', `Connecting to ${users[0].username}...`);
                     this.connectToUser(users[0].socketId);
                 } else {
                     console.log('Waiting for other user to initiate connection');
+                    this.updateConnectionStatus('connecting', `${users[0].username} connecting to you...`);
                 }
             }
         });
@@ -183,6 +212,9 @@ class ConnectionManager {
             this.updateUsersList();
             this.showStatus(`${user.username} joined!`, 'info');
 
+            // Update status to show user joined
+            this.updateConnectionStatus('user-joined', `${user.username} is online`);
+
             // If we're not connected to anyone, initiate connection
             // Only initiate if our socket ID is greater (prevents both users from initiating)
             const shouldConnect = (!this.peerConnection || this.peerConnection.connectionState === 'closed')
@@ -193,9 +225,11 @@ class ConnectionManager {
 
             if (shouldConnect) {
                 console.log('I will initiate connection to new user');
+                this.updateConnectionStatus('connecting', `Connecting to ${user.username}...`);
                 this.connectToUser(user.socketId);
             } else {
                 console.log('Waiting for other user to initiate connection');
+                this.updateConnectionStatus('connecting', `${user.username} connecting to you...`);
             }
         });
 
@@ -206,6 +240,12 @@ class ConnectionManager {
             if (this.remoteSocketId === data.socketId) {
                 this.showStatus('Remote user disconnected', 'info');
                 this.closeConnection();
+                // Update status based on remaining users
+                if (this.connectedUsers.length > 0) {
+                    this.updateConnectionStatus('waiting', `${this.connectedUsers.length} user(s) online`);
+                } else {
+                    this.updateConnectionStatus('waiting', 'Waiting for others to join');
+                }
             }
         });
 
@@ -252,43 +292,52 @@ class ConnectionManager {
         this.remoteSocketId = remoteSocketId;
 
         try {
-            // Get local stream (from the video preview)
-            this.localStream = document.getElementById('preview').srcObject;
+            // Get local stream from multiple sources
+            this.localStream = document.getElementById('preview')?.srcObject
+                || window.videoRecorder?.stream
+                || null;
 
-            if (!this.localStream) {
-                console.error('No local stream available');
-                this.showStatus('Camera not initialized', 'error');
-                return;
+            console.log('connectToUser - localStream:', this.localStream ? 'available with ' + this.localStream.getTracks().length + ' tracks' : 'not available');
+
+            // Close any existing peer connection
+            if (this.peerConnection) {
+                this.peerConnection.close();
+                this.peerConnection = null;
             }
+            this.remoteStream = null;
 
             // Create peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
+            console.log('Created new peer connection');
 
-            // Add local stream tracks to peer connection
-            this.localStream.getTracks().forEach(track => {
-                this.peerConnection.addTrack(track, this.localStream);
-            });
+            // Add local stream tracks to peer connection (if available)
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => {
+                    this.peerConnection.addTrack(track, this.localStream);
+                    console.log('Added local track:', track.kind);
+                });
+            } else {
+                console.log('No local stream to add tracks from');
+            }
 
             // Handle incoming remote stream
             this.peerConnection.ontrack = (event) => {
                 console.log('🎥 Received remote track:', event.track.kind);
-                console.log('Remote video element:', this.remoteVideo);
-                console.log('Remote video frame element:', this.remoteVideoFrame);
                 if (!this.remoteStream) {
                     this.remoteStream = new MediaStream();
                     this.remoteVideo.srcObject = this.remoteStream;
-                    console.log('Created new MediaStream for remote video');
                 }
                 this.remoteStream.addTrack(event.track);
-                console.log('Added track to remote stream. Total tracks:', this.remoteStream.getTracks().length);
-                console.log('Showing remote video frame');
+                console.log('Remote stream tracks:', this.remoteStream.getTracks().length);
                 this.remoteVideoFrame.classList.remove('hidden');
-                this.showStatus('Connected!', 'success');
+                // Update status to Connected when we receive tracks
+                this.updateConnectionStatus('connected', 'Video chat active');
             };
 
             // Handle ICE candidates
             this.peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
+                    console.log('Sending ICE candidate');
                     this.socket.emit('ice-candidate', {
                         candidate: event.candidate,
                         to: this.remoteSocketId
@@ -298,8 +347,27 @@ class ConnectionManager {
 
             // Monitor connection state
             this.peerConnection.onconnectionstatechange = () => {
-                console.log('Connection state:', this.peerConnection.connectionState);
-                this.updateConnectionStatus(this.peerConnection.connectionState);
+                const state = this.peerConnection.connectionState;
+                console.log('🔗 Connection state changed:', state);
+
+                // Only update UI status, don't close connection on temporary states
+                if (state === 'connected') {
+                    this.updateConnectionStatus('connected', 'Video chat active');
+                    this.remoteVideoFrame.classList.remove('hidden');
+                } else if (state === 'failed') {
+                    this.updateConnectionStatus('failed', 'Connection failed - try again');
+                } else if (state === 'closed') {
+                    this.updateConnectionStatus('closed', 'Connection ended');
+                } else if (state === 'disconnected') {
+                    this.updateConnectionStatus('disconnected', 'Trying to reconnect...');
+                } else if (state === 'connecting') {
+                    this.updateConnectionStatus('connecting', 'Establishing connection...');
+                }
+            };
+
+            // Monitor ICE connection state
+            this.peerConnection.oniceconnectionstatechange = () => {
+                console.log('🧊 ICE connection state:', this.peerConnection.iceConnectionState);
             };
 
             // Create and send offer
@@ -321,56 +389,86 @@ class ConnectionManager {
 
     async handleOffer(offer, from) {
         try {
-            // Get local stream
-            this.localStream = document.getElementById('preview').srcObject;
+            // Store the remote socket ID for ICE candidate exchange
+            this.remoteSocketId = from;
 
-            if (!this.localStream) {
-                console.error('No local stream available');
-                return;
+            // Get local stream from multiple sources
+            this.localStream = document.getElementById('preview')?.srcObject
+                || window.videoRecorder?.stream
+                || null;
+
+            console.log('handleOffer - localStream:', this.localStream ? 'available with ' + this.localStream.getTracks().length + ' tracks' : 'not available');
+
+            // Close any existing peer connection
+            if (this.peerConnection) {
+                this.peerConnection.close();
+                this.peerConnection = null;
             }
+            this.remoteStream = null;
 
-            // Create peer connection if it doesn't exist
-            if (!this.peerConnection) {
-                this.peerConnection = new RTCPeerConnection(this.iceServers);
+            // Create peer connection
+            this.peerConnection = new RTCPeerConnection(this.iceServers);
+            console.log('Created new peer connection (handleOffer)');
 
-                // Add local stream tracks
+            // Add local stream tracks (if available)
+            if (this.localStream) {
                 this.localStream.getTracks().forEach(track => {
                     this.peerConnection.addTrack(track, this.localStream);
+                    console.log('Added local track:', track.kind);
                 });
-
-                // Handle incoming remote stream
-                this.peerConnection.ontrack = (event) => {
-                    console.log('🎥 Received remote track (in handleOffer):', event.track.kind);
-                    console.log('Remote video element:', this.remoteVideo);
-                    console.log('Remote video frame element:', this.remoteVideoFrame);
-                    if (!this.remoteStream) {
-                        this.remoteStream = new MediaStream();
-                        this.remoteVideo.srcObject = this.remoteStream;
-                        console.log('Created new MediaStream for remote video');
-                    }
-                    this.remoteStream.addTrack(event.track);
-                    console.log('Added track to remote stream. Total tracks:', this.remoteStream.getTracks().length);
-                    console.log('Showing remote video frame');
-                    this.remoteVideoFrame.classList.remove('hidden');
-                    this.showStatus('Connected!', 'success');
-                };
-
-                // Handle ICE candidates
-                this.peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        this.socket.emit('ice-candidate', {
-                            candidate: event.candidate,
-                            to: this.remoteSocketId
-                        });
-                    }
-                };
-
-                // Monitor connection state
-                this.peerConnection.onconnectionstatechange = () => {
-                    console.log('Connection state:', this.peerConnection.connectionState);
-                    this.updateConnectionStatus(this.peerConnection.connectionState);
-                };
+            } else {
+                console.log('No local stream to add tracks from');
             }
+
+            // Handle incoming remote stream
+            this.peerConnection.ontrack = (event) => {
+                console.log('🎥 Received remote track (in handleOffer):', event.track.kind);
+                if (!this.remoteStream) {
+                    this.remoteStream = new MediaStream();
+                    this.remoteVideo.srcObject = this.remoteStream;
+                }
+                this.remoteStream.addTrack(event.track);
+                console.log('Remote stream tracks:', this.remoteStream.getTracks().length);
+                this.remoteVideoFrame.classList.remove('hidden');
+                // Update status to Connected when we receive tracks
+                this.updateConnectionStatus('connected', 'Video chat active');
+            };
+
+            // Handle ICE candidates
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('Sending ICE candidate (handleOffer)');
+                    this.socket.emit('ice-candidate', {
+                        candidate: event.candidate,
+                        to: this.remoteSocketId
+                    });
+                }
+            };
+
+            // Monitor connection state
+            this.peerConnection.onconnectionstatechange = () => {
+                const state = this.peerConnection.connectionState;
+                console.log('🔗 Connection state changed (handleOffer):', state);
+
+                // Only update UI status, don't close connection on temporary states
+                if (state === 'connected') {
+                    this.updateConnectionStatus('connected', 'Video chat active');
+                    this.remoteVideoFrame.classList.remove('hidden');
+                } else if (state === 'failed') {
+                    this.updateConnectionStatus('failed', 'Connection failed - try again');
+                } else if (state === 'closed') {
+                    this.updateConnectionStatus('closed', 'Connection ended');
+                } else if (state === 'disconnected') {
+                    this.updateConnectionStatus('disconnected', 'Trying to reconnect...');
+                } else if (state === 'connecting') {
+                    this.updateConnectionStatus('connecting', 'Establishing connection...');
+                }
+            };
+
+            // Monitor ICE connection state
+            this.peerConnection.oniceconnectionstatechange = () => {
+                console.log('🧊 ICE connection state (handleOffer):', this.peerConnection.iceConnectionState);
+            };
 
             // Set remote description
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -411,26 +509,115 @@ class ConnectionManager {
         }
     }
 
-    updateConnectionStatus(state) {
+    // Get the actual connection state based on all factors
+    getActualConnectionState() {
+        // Priority 1: Check WebRTC peer connection state
+        if (this.peerConnection) {
+            const peerState = this.peerConnection.connectionState;
+            if (peerState === 'connected') {
+                return { state: 'connected', detail: 'Video chat active' };
+            }
+            if (peerState === 'connecting' || peerState === 'new') {
+                return { state: 'connecting', detail: 'Establishing peer connection' };
+            }
+            if (peerState === 'failed') {
+                return { state: 'failed', detail: 'Connection failed - try again' };
+            }
+            if (peerState === 'disconnected') {
+                return { state: 'disconnected', detail: 'Peer connection lost' };
+            }
+            if (peerState === 'closed') {
+                return { state: 'closed', detail: 'Connection ended' };
+            }
+        }
+
+        // Priority 2: Check if we're connected to server and have users
+        if (this.isLoggedIn && this.socket) {
+            if (this.connectedUsers.length > 0) {
+                return { state: 'user-joined', detail: `${this.connectedUsers.length} user(s) online` };
+            }
+            return { state: 'waiting', detail: 'Waiting for others to join' };
+        }
+
+        // Priority 3: Not connected to server
+        return { state: 'disconnected', detail: 'Click Connect to start' };
+    }
+
+    updateConnectionStatus(state, detail = '') {
+        if (!this.connectionStatus) return;
+
         const statusText = this.connectionStatus.querySelector('.status-text');
         const statusDot = this.connectionStatus.querySelector('.status-dot');
+        const statusDetail = this.connectionStatus.querySelector('.status-detail');
 
-        switch (state) {
+        if (!statusText || !statusDot || !statusDetail) return;
+
+        // Use provided state or get actual state
+        let displayState = state;
+        let displayDetail = detail;
+
+        // If no explicit state provided, calculate it
+        if (!state) {
+            const actual = this.getActualConnectionState();
+            displayState = actual.state;
+            displayDetail = actual.detail;
+        }
+
+        switch (displayState) {
             case 'connected':
                 statusText.textContent = 'Connected';
                 statusDot.className = 'status-dot connected';
+                statusDetail.textContent = displayDetail || 'Video chat active';
                 break;
+            case 'new':
             case 'connecting':
-                statusText.textContent = 'Connecting...';
+                statusText.textContent = 'Connecting';
                 statusDot.className = 'status-dot connecting';
+                statusDetail.textContent = displayDetail || 'Establishing peer connection';
+                break;
+            case 'waiting':
+                statusText.textContent = 'Online';
+                statusDot.className = 'status-dot waiting';
+                statusDetail.textContent = displayDetail || 'Waiting for others to join';
+                break;
+            case 'server-connected':
+                statusText.textContent = 'Server Connected';
+                statusDot.className = 'status-dot waiting';
+                statusDetail.textContent = displayDetail || 'Ready to connect';
+                break;
+            case 'user-joined':
+                statusText.textContent = 'User Online';
+                statusDot.className = 'status-dot connecting';
+                statusDetail.textContent = displayDetail || 'Initiating connection...';
+                break;
+            case 'error':
+                statusText.textContent = 'Error';
+                statusDot.className = 'status-dot error';
+                statusDetail.textContent = displayDetail || 'Connection failed';
                 break;
             case 'disconnected':
-            case 'closed':
-            case 'failed':
-                statusText.textContent = 'Disconnected';
-                statusDot.className = 'status-dot disconnected';
-                this.remoteVideoFrame.classList.add('hidden');
+                // Don't hide video immediately - disconnected can be temporary
+                statusText.textContent = 'Reconnecting';
+                statusDot.className = 'status-dot connecting';
+                statusDetail.textContent = displayDetail || 'Connection interrupted, trying to reconnect...';
+                // Don't hide video - might recover
                 break;
+            case 'closed':
+                statusText.textContent = 'Closed';
+                statusDot.className = 'status-dot disconnected';
+                statusDetail.textContent = displayDetail || 'Connection ended';
+                if (this.remoteVideoFrame) this.remoteVideoFrame.classList.add('hidden');
+                break;
+            case 'failed':
+                statusText.textContent = 'Failed';
+                statusDot.className = 'status-dot error';
+                statusDetail.textContent = displayDetail || 'Connection failed - try again';
+                if (this.remoteVideoFrame) this.remoteVideoFrame.classList.add('hidden');
+                break;
+            default:
+                statusText.textContent = 'Not Connected';
+                statusDot.className = 'status-dot disconnected';
+                statusDetail.textContent = 'Click Connect to start';
         }
     }
 

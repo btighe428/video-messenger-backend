@@ -70,14 +70,18 @@ class StudioFabric {
             return;
         }
 
-        // Initialize fabric.js canvas
+        // Initialize fabric.js canvas with Figma-style selection
         this.canvas = new fabric.Canvas('studioFabricCanvas', {
             backgroundColor: '#f5f5f5',
             selection: true,
             preserveObjectStacking: true,
             enableRetinaScaling: true,
             stopContextMenu: true,
-            fireRightClick: true
+            fireRightClick: true,
+            // Figma-style marquee selection box
+            selectionColor: 'rgba(125, 46, 255, 0.1)',
+            selectionBorderColor: '#7d2eff',
+            selectionLineWidth: 1
         });
 
         // Set initial size
@@ -273,19 +277,32 @@ class StudioFabric {
         e.preventDefault();
         e.stopPropagation();
 
-        const delta = e.deltaY;
-        let zoom = this.canvas.getZoom();
+        // Figma-style navigation:
+        // - Pinch (ctrlKey) = zoom
+        // - Two-finger scroll (no ctrlKey) = pan
+        if (e.ctrlKey || e.metaKey) {
+            // PINCH TO ZOOM
+            const delta = e.deltaY;
+            let zoom = this.canvas.getZoom();
 
-        // Zoom in/out
-        zoom *= 0.999 ** delta;
-        zoom = Math.min(Math.max(zoom, this.minZoom), this.maxZoom);
+            // Zoom in/out (more sensitive for pinch gestures)
+            zoom *= 0.995 ** delta;
+            zoom = Math.min(Math.max(zoom, this.minZoom), this.maxZoom);
 
-        // Zoom toward mouse position
-        const point = new fabric.Point(e.offsetX, e.offsetY);
-        this.canvas.zoomToPoint(point, zoom);
+            // Zoom toward mouse position
+            const point = new fabric.Point(e.offsetX, e.offsetY);
+            this.canvas.zoomToPoint(point, zoom);
 
-        this.currentZoom = zoom;
-        this.updateZoomDisplay();
+            this.currentZoom = zoom;
+            this.updateZoomDisplay();
+        } else {
+            // TWO-FINGER SCROLL TO PAN
+            const vpt = this.canvas.viewportTransform.slice();
+            vpt[4] -= e.deltaX;
+            vpt[5] -= e.deltaY;
+            this.canvas.setViewportTransform(vpt);
+            this.canvas.renderAll();
+        }
     }
 
     // ==================== TOOL SWITCHING ====================
@@ -299,7 +316,12 @@ class StudioFabric {
 
         switch (tool) {
             case 'select':
+                // Selection tool: click-drag creates marquee selection box
                 this.canvas.defaultCursor = 'default';
+                this.canvas.selection = true;
+                this.canvas.selectionColor = 'rgba(125, 46, 255, 0.1)';
+                this.canvas.selectionBorderColor = '#7d2eff';
+                this.canvas.selectionLineWidth = 1;
                 break;
             case 'draw':
                 this.enableDrawingMode();

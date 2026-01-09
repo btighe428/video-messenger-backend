@@ -195,9 +195,9 @@ body {
     left: calc(40px + var(--safe-area-left));
 }
 
-/* Video preview dock - respect bottom + right safe areas */
+/* Video preview dock - respect bottom + right safe areas, above zoom controls */
 .video-preview-dock {
-    bottom: calc(40px + var(--safe-area-bottom));
+    bottom: calc(100px + var(--safe-area-bottom));
     right: calc(40px + var(--safe-area-right));
 }
 

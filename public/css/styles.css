@@ -139,10 +139,10 @@ body.bg-hidden {
 
 /* ==================== VIDEO AREA ==================== */
 
-/* Video Preview Container - bottom-right corner */
+/* Video Preview Container - bottom-right corner, above zoom controls */
 .video-preview-dock {
     position: fixed;
-    bottom: 24px;
+    bottom: 100px;
     right: 24px;
     width: 200px;
     height: 200px;
@@ -164,6 +164,11 @@ body.bg-hidden {
     overflow: hidden;
     background: var(--bg-tertiary);
     box-shadow: var(--shadow-xl);
+    cursor: grab;
+}
+
+.video-frame:active {
+    cursor: grabbing;
 }
 
 .video-frame::before {
@@ -190,6 +195,7 @@ body.bg-hidden {
     top: 0;
     left: 0;
     z-index: 1;
+    pointer-events: none;
 }
 
 .video-frame.bg-active video {
@@ -204,9 +210,24 @@ body.bg-hidden {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    pointer-events: auto;
+    pointer-events: none;
     z-index: 15;
     object-fit: cover;
+}
+
+#stickersCanvas {
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 20;
+}
+
+/* Enable pointer events on stickersCanvas only when actively editing stickers */
+#stickersCanvas.sticker-editing {
+    pointer-events: auto;
 }
 
 .frame-overlay {
@@ -230,6 +251,7 @@ body.bg-hidden {
     font-size: 0.75rem;
     z-index: 20;
     box-shadow: var(--shadow);
+    pointer-events: none;
 }
 
 .recording-dot {
@@ -1441,7 +1463,7 @@ body.bg-hidden {
 /* Status Toast */
 .status-toast {
     position: fixed;
-    top: 40px;
+    bottom: 100px;
     left: 50%;
     transform: translateX(-50%);
     padding: var(--spacing-md) calc(var(--spacing-md) * 2);
@@ -1449,16 +1471,16 @@ body.bg-hidden {
     font-weight: 600;
     z-index: 3000;
     box-shadow: var(--shadow-md);
-    animation: slideDown 0.3s var(--ease-ios);
+    animation: slideUp 0.3s var(--ease-ios);
     backdrop-filter: blur(10px);
     max-width: 90%;
     text-align: center;
 }
 
-@keyframes slideDown {
+@keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
+        transform: translateX(-50%) translateY(20px);
     }
     to {
         opacity: 1;
@@ -1479,6 +1501,59 @@ body.bg-hidden {
 .status-toast.info {
     background: rgba(59, 130, 246, 0.9);
     color: white;
+}
+
+/* Bottom Toast for Premium Upsell */
+.bottom-toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    z-index: 3000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(12px);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(109, 40, 217, 0.95));
+    color: white;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.bottom-toast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bottom-toast .toast-icon {
+    font-size: 20px;
+}
+
+.bottom-toast .toast-text {
+    flex: 1;
+}
+
+.bottom-toast .toast-action {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bottom-toast .toast-action:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* Login Modal */
@@ -1650,6 +1725,7 @@ body.bg-hidden {
     font-size: 0.75rem;
     font-weight: 600;
     backdrop-filter: blur(10px);
+    pointer-events: none;
 }
 
 /* Mute Button */
@@ -1703,31 +1779,39 @@ body.bg-hidden {
     right: 20px;
     background: var(--bg-main);
     backdrop-filter: blur(10px);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-full);
+    padding: 10px 16px;
+    border-radius: 16px;
     border: 1px solid var(--border-main);
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 12px;
     z-index: 1100;
     box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+.connection-status:hover {
+    box-shadow: var(--shadow-lg);
 }
 
 .status-dot {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    animation: pulse 2s var(--ease-ios) infinite;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
 .status-dot.connected {
     background: #10b981;
-    box-shadow: 0 0 10px #10b981;
+    box-shadow: 0 0 12px #10b981;
+    animation: pulse-green 2s ease infinite;
 }
 
 .status-dot.connecting {
     background: #f59e0b;
-    box-shadow: 0 0 10px #f59e0b;
+    box-shadow: 0 0 12px #f59e0b;
+    animation: pulse-orange 1s ease infinite;
 }
 
 .status-dot.disconnected {
@@ -1735,10 +1819,56 @@ body.bg-hidden {
     animation: none;
 }
 
+.status-dot.waiting {
+    background: #3b82f6;
+    box-shadow: 0 0 12px #3b82f6;
+    animation: pulse-blue 1.5s ease infinite;
+}
+
+.status-dot.error {
+    background: #ef4444;
+    box-shadow: 0 0 12px #ef4444;
+    animation: pulse-red 1s ease infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 8px #10b981; }
+    50% { box-shadow: 0 0 16px #10b981; }
+}
+
+@keyframes pulse-orange {
+    0%, 100% { box-shadow: 0 0 8px #f59e0b; }
+    50% { box-shadow: 0 0 16px #f59e0b; }
+}
+
+@keyframes pulse-blue {
+    0%, 100% { box-shadow: 0 0 8px #3b82f6; }
+    50% { box-shadow: 0 0 16px #3b82f6; }
+}
+
+@keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 8px #ef4444; }
+    50% { box-shadow: 0 0 16px #ef4444; }
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .status-text {
     color: var(--text-primary);
     font-size: 0.85rem;
     font-weight: 600;
+    line-height: 1.2;
+}
+
+.status-detail {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.2;
 }
 
 /* Achievements Button */

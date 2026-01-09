@@ -231,8 +231,10 @@ io.on('connection', (socket) => {
         */
 
         // Store user info (no password check)
+        // Username is ALWAYS provided by client (Color-Animal format)
+        // Never fall back to generic User-XXX format
         connectedUsers.set(socket.id, {
-            username: username || `User${socket.id.substring(0, 4)}`,
+            username: username,
             socketId: socket.id
         });
 

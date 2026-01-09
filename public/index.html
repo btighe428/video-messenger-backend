@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Video Messenger - Yahoo Mail</title>
-    <link rel="stylesheet" href="css/styles.css?v=6">
+    <link rel="stylesheet" href="css/styles.css?v=7">
     <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/studio.css">
     <link rel="stylesheet" href="css/studio-fabric.css?v=5">
@@ -52,7 +52,10 @@
     <!-- Connection Status Indicator -->
     <div id="connectionStatus" class="connection-status">
         <div class="status-dot disconnected"></div>
-        <span class="status-text">Not Connected</span>
+        <div class="status-info">
+            <span class="status-text">Not Connected</span>
+            <span class="status-detail">Click Connect to start</span>
+        </div>
     </div>
 
     <!-- Top Navigation - Centered -->
@@ -541,6 +544,15 @@
                 <span class="tool-label">Clipart</span>
             </button>
 
+            <button class="studio-tool-btn" data-panel="worksphere" title="WorkSphere">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span class="tool-label">WorkSphere</span>
+            </button>
+
             <button class="studio-tool-btn" id="studioImageBtn" title="Upload Image">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -648,10 +660,6 @@
                     Upload Image
                 </button>
             </div>
-            <button id="studioFloatingCreateBtn" class="studio-floating-create-btn">
-                <span>✨</span>
-                Create
-            </button>
         </div>
 
         <!-- Zoom Controls -->
@@ -751,20 +759,20 @@
     <!-- Menu Manager - Load first to handle all menu interactions -->
     <script src="js/menu-manager.js?v=1"></script>
 
-    <script src="js/connection.js?v=17"></script>
+    <script src="js/connection.js?v=24"></script>
     <script src="js/effects.js?v=17"></script>
     <script src="js/particles.js?v=17"></script>
-    <script src="js/stickers.js?v=17"></script>
+    <script src="js/stickers.js?v=18"></script>
     <script src="js/achievements.js?v=17"></script>
     <script src="js/recorder.js?v=17"></script>
     <script src="js/frames.js?v=17"></script>
-    <script src="js/studio.js?v=1"></script>
+    <script src="js/studio.js?v=4"></script>
 
     <!-- Fabric.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 
     <!-- New Fabric.js Studio -->
-    <script src="js/studio-fabric.js?v=6"></script>
+    <script src="js/studio-fabric.js?v=7"></script>
     <script src="js/studio-panels.js?v=5"></script>
     <script src="js/studio-tools.js?v=2"></script>
 
@@ -838,9 +846,19 @@
                 currentMode = 'studio';
                 setActiveButton(studioToggleBtn);
 
-                // Hide ALL video UI completely
-                if (draggableUI) draggableUI.classList.add('hidden');
-                if (videoPreviewDock) videoPreviewDock.classList.add('hidden');
+                // Check if video is active (camera stream running)
+                const previewVideo = document.getElementById('preview');
+                const isVideoActive = previewVideo && previewVideo.srcObject &&
+                    previewVideo.srcObject.getVideoTracks().some(track => track.enabled && track.readyState === 'live');
+
+                // Keep video preview visible if camera is active
+                if (isVideoActive) {
+                    if (draggableUI) draggableUI.classList.remove('hidden');
+                    if (videoPreviewDock) videoPreviewDock.classList.remove('hidden');
+                } else {
+                    if (draggableUI) draggableUI.classList.add('hidden');
+                    if (videoPreviewDock) videoPreviewDock.classList.add('hidden');
+                }
                 if (studioVideoPreview) studioVideoPreview.classList.add('hidden');
 
                 // Show studio
@@ -874,7 +892,14 @@
                 let dragOffsetY = 0;
 
                 videoPreviewDock.addEventListener('mousedown', function(e) {
-                    if (currentMode !== 'video') return;
+                    // Don't drag if clicking on buttons or interactive elements
+                    if (e.target.closest('button') ||
+                        e.target.closest('.sticker-item') ||
+                        e.target.closest('.sticker-controls') ||
+                        e.target.id === 'stickersCanvas') {
+                        return;
+                    }
+                    // Allow dragging when visible
                     isDragging = true;
                     const rect = videoPreviewDock.getBoundingClientRect();
                     dragOffsetX = e.clientX - rect.left;
@@ -902,7 +927,14 @@
 
                 // Touch support for mobile
                 videoPreviewDock.addEventListener('touchstart', function(e) {
-                    if (currentMode !== 'video') return;
+                    // Don't drag if touching buttons or interactive elements
+                    if (e.target.closest('button') ||
+                        e.target.closest('.sticker-item') ||
+                        e.target.closest('.sticker-controls') ||
+                        e.target.id === 'stickersCanvas') {
+                        return;
+                    }
+                    // Allow dragging when visible
                     isDragging = true;
                     const touch = e.touches[0];
                     const rect = videoPreviewDock.getBoundingClientRect();

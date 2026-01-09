@@ -152,6 +152,9 @@ class StudioPanels {
             case 'premium':
                 this.renderPremiumPanel();
                 break;
+            case 'worksphere':
+                this.renderWorkSpherePanel();
+                break;
             default:
                 this.contentElement.innerHTML = '';
         }
@@ -598,41 +601,196 @@ class StudioPanels {
         `;
     }
 
-    showPremiumUpsell() {
-        // Create modal if it doesn't exist
-        let modal = document.getElementById('premiumUpsellModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'premiumUpsellModal';
-            modal.className = 'premium-upsell-modal';
-            modal.innerHTML = `
-                <div class="premium-upsell-content">
-                    <button class="premium-upsell-close" onclick="studioPanels.closePremiumUpsell()">&times;</button>
-                    <div class="premium-upsell-icon">✨</div>
-                    <h2>Upgrade to Premium</h2>
-                    <p class="premium-upsell-price"><span class="price">$5</span>/month</p>
-                    <ul class="premium-upsell-features">
-                        <li>🎨 7 Premium Templates</li>
-                        <li>🎬 HD Video Export</li>
-                        <li>🚫 No Watermarks</li>
-                        <li>☁️ Cloud Storage</li>
-                        <li>🎯 Priority Support</li>
-                    </ul>
-                    <button class="premium-upsell-btn" onclick="studioPanels.closePremiumUpsell()">
-                        Start Free Trial
-                    </button>
-                    <p class="premium-upsell-note">7-day free trial, cancel anytime</p>
-                </div>
-            `;
-            document.body.appendChild(modal);
+    // ==================== WORKSPHERE PANEL ====================
+
+    renderWorkSpherePanel() {
+        const savedCanvases = [
+            {
+                id: 'night-out',
+                name: 'Night Out',
+                thumbnail: 'css/xixa-1.png',
+                images: [
+                    'css/xixa-1.png',
+                    'css/xixa-2.png',
+                    'css/xixa-3.png',
+                    'css/xixa-4.png',
+                    'css/xixa-5.png',
+                    'css/xixa-6.png'
+                ]
+            },
+            {
+                id: 'team-meeting',
+                name: 'Team Meeting',
+                thumbnail: 'css/one.png',
+                images: ['css/one.png', 'css/two.png']
+            },
+            {
+                id: 'product-launch',
+                name: 'Product Launch',
+                thumbnail: 'css/three.png',
+                images: ['css/three.png', 'css/four.png', 'css/five.png']
+            },
+            {
+                id: 'celebration',
+                name: 'Celebration',
+                thumbnail: 'css/six.png',
+                images: ['css/six.png', 'css/seven.png']
+            }
+        ];
+
+        this.contentElement.innerHTML = `
+            <div class="studio-panel-header">
+                <h3>🌐 WorkSphere</h3>
+            </div>
+            <div class="studio-canvas-list">
+                ${savedCanvases.map(canvas => `
+                    <div class="studio-canvas-item" data-canvas-id="${canvas.id}" onclick="studioPanels.loadCanvas('${canvas.id}')">
+                        <div class="canvas-thumbnail">
+                            <img src="${canvas.thumbnail}" alt="${canvas.name}">
+                            <span class="canvas-count">${canvas.images.length} items</span>
+                        </div>
+                        <div class="canvas-info">
+                            <span class="canvas-name">${canvas.name}</span>
+                            <span class="canvas-meta">Click to load</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="studio-canvas-footer">
+                <button class="studio-canvas-new-btn" onclick="studioPanels.createNewCanvas()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Canvas
+                </button>
+            </div>
+        `;
+
+        // Store canvas data for loading
+        this.savedCanvases = savedCanvases;
+    }
+
+    loadCanvas(canvasId) {
+        const canvas = this.savedCanvases?.find(c => c.id === canvasId);
+        if (!canvas) return;
+
+        // Show loading toast
+        this.showCanvasToast(`Loading "${canvas.name}"...`);
+
+        // Load images onto the fabric canvas
+        if (window.studioFabric && window.studioFabric.canvas) {
+            const fabricCanvas = window.studioFabric.canvas;
+
+            // Clear existing objects (optional - could prompt user)
+            // fabricCanvas.clear();
+
+            // Load each image with offset positioning
+            canvas.images.forEach((imgSrc, index) => {
+                fabric.Image.fromURL(imgSrc, (img) => {
+                    // Scale down and position in a grid-like layout
+                    const scale = 0.3;
+                    const padding = 20;
+                    const cols = 3;
+                    const col = index % cols;
+                    const row = Math.floor(index / cols);
+
+                    img.set({
+                        left: 50 + (col * (img.width * scale + padding)),
+                        top: 50 + (row * (img.height * scale + padding)),
+                        scaleX: scale,
+                        scaleY: scale,
+                        selectable: true
+                    });
+
+                    fabricCanvas.add(img);
+
+                    if (index === canvas.images.length - 1) {
+                        fabricCanvas.renderAll();
+                        this.showCanvasToast(`"${canvas.name}" loaded with ${canvas.images.length} items`, 'success');
+                    }
+                }, { crossOrigin: 'anonymous' });
+            });
+        } else {
+            this.showCanvasToast('Canvas not ready', 'error');
         }
-        modal.classList.add('visible');
+
+        // Close the panel
+        this.closePanel();
+    }
+
+    createNewCanvas() {
+        // Clear the canvas
+        if (window.studioFabric && window.studioFabric.canvas) {
+            window.studioFabric.canvas.clear();
+            this.showCanvasToast('New canvas created', 'success');
+        }
+        this.closePanel();
+    }
+
+    showCanvasToast(message, type = 'info') {
+        let toast = document.getElementById('canvasToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'canvasToast';
+            toast.className = 'bottom-toast canvas-toast';
+            document.body.appendChild(toast);
+        }
+
+        const icons = {
+            info: '🎨',
+            success: '✅',
+            error: '❌'
+        };
+
+        toast.innerHTML = `
+            <span class="toast-icon">${icons[type]}</span>
+            <span class="toast-text">${message}</span>
+        `;
+
+        toast.className = `bottom-toast canvas-toast ${type}`;
+
+        requestAnimationFrame(() => {
+            toast.classList.add('visible');
+        });
+
+        if (this.canvasToastTimeout) clearTimeout(this.canvasToastTimeout);
+        this.canvasToastTimeout = setTimeout(() => {
+            toast.classList.remove('visible');
+        }, 3000);
+    }
+
+    showPremiumUpsell() {
+        // Create bottom toast if it doesn't exist
+        let toast = document.getElementById('premiumToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'premiumToast';
+            toast.className = 'bottom-toast';
+            toast.innerHTML = `
+                <span class="toast-icon">✨</span>
+                <span class="toast-text">Upgrade to Premium for access to templates</span>
+                <button class="toast-action" onclick="studioPanels.closePremiumUpsell()">Upgrade</button>
+            `;
+            document.body.appendChild(toast);
+        }
+
+        // Show toast
+        requestAnimationFrame(() => {
+            toast.classList.add('visible');
+        });
+
+        // Auto-hide after 4 seconds
+        if (this.toastTimeout) clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => {
+            this.closePremiumUpsell();
+        }, 4000);
     }
 
     closePremiumUpsell() {
-        const modal = document.getElementById('premiumUpsellModal');
-        if (modal) {
-            modal.classList.remove('visible');
+        const toast = document.getElementById('premiumToast');
+        if (toast) {
+            toast.classList.remove('visible');
         }
     }
 }

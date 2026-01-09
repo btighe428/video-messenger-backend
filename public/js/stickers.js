@@ -602,6 +602,10 @@ class StickerManager {
         this.deselectAll();
         sticker.selected = true;
         this.selectedSticker = sticker;
+        // Enable pointer events on stickersCanvas for interaction
+        if (this.canvas) {
+            this.canvas.classList.add('sticker-editing');
+        }
     }
 
     deselectAll() {
@@ -609,6 +613,10 @@ class StickerManager {
             sticker.selected = false;
         });
         this.selectedSticker = null;
+        // Disable pointer events to allow dragging the video preview
+        if (this.canvas) {
+            this.canvas.classList.remove('sticker-editing');
+        }
     }
 
     deleteSelectedSticker() {
@@ -679,6 +687,10 @@ class StickerManager {
     clear() {
         this.stickers = [];
         this.selectedSticker = null;
+        // Disable pointer events to allow dragging
+        if (this.canvas) {
+            this.canvas.classList.remove('sticker-editing');
+        }
         this.syncStickersToRecorder();
     }
 }
