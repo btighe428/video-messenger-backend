@@ -82,6 +82,12 @@ class VideoRecorder {
         this.zoomBtn.addEventListener('click', () => this.toggleZoom());
         this.minimizeBtn.addEventListener('click', () => this.toggleMinimize());
 
+        // Sticker edit toggle button
+        const stickerEditBtn = document.getElementById('stickerEditBtn');
+        if (stickerEditBtn) {
+            stickerEditBtn.addEventListener('click', () => this.toggleStickerEdit());
+        }
+
         // Set up dragging
         this.setupDragging();
         this.setupRemoteDragging();
@@ -200,6 +206,28 @@ class VideoRecorder {
                 </svg>
             `;
             this.minimizeBtn.title = 'Minimize UI';
+        }
+    }
+
+    toggleStickerEdit() {
+        const stickersCanvas = document.getElementById('stickersCanvas');
+        const stickerEditBtn = document.getElementById('stickerEditBtn');
+
+        if (!stickersCanvas || !stickerEditBtn) return;
+
+        const isActive = stickersCanvas.classList.toggle('sticker-editing');
+        stickerEditBtn.classList.toggle('active', isActive);
+
+        if (isActive) {
+            stickerEditBtn.title = 'Done Editing Stickers';
+            console.log('Sticker edit mode: ON');
+        } else {
+            stickerEditBtn.title = 'Edit Stickers';
+            console.log('Sticker edit mode: OFF');
+            // Deselect any selected stickers
+            if (window.stickerSystem) {
+                window.stickerSystem.deselectAll();
+            }
         }
     }
 

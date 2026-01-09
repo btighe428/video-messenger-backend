@@ -1038,6 +1038,40 @@ body.bg-hidden {
     display: none;
 }
 
+/* Sticker Edit Button */
+.btn-sticker-edit {
+    position: absolute;
+    bottom: -44px;
+    left: calc(50% + 44px);
+    transform: translateX(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-main);
+    border: 1px solid var(--border-main);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 100;
+}
+
+.btn-sticker-edit:hover {
+    background: var(--bg-secondary);
+}
+
+.btn-sticker-edit.active {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+.btn-sticker-edit:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
 /* Playback Modal */
 .playback-modal {
     position: fixed;
