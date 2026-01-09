@@ -1946,6 +1946,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (window.videoRecorder?.stream) {
                 console.log('✓ Camera already initialized');
             }
+            // Show video preview dock
+            const videoPreviewDock = document.getElementById('videoPreviewDock');
+            if (videoPreviewDock) {
+                videoPreviewDock.classList.remove('hidden');
+                console.log('✓ Video preview shown');
+            }
         } catch (err) {
             console.log('⚠ Camera initialization failed:', err.message);
             // Continue anyway - can still receive video

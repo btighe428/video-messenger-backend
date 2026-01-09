@@ -123,6 +123,32 @@ class ConnectionManager {
             });
         }
         */
+
+        // Reconnect button handler
+        const reconnectBtn = document.getElementById('reconnectBtn');
+        if (reconnectBtn) {
+            reconnectBtn.addEventListener('click', () => {
+                this.reconnect();
+            });
+        }
+    }
+
+    reconnect() {
+        console.log('🔄 Reconnecting...');
+        this.updateConnectionStatus('connecting', 'Reconnecting...');
+
+        // Close existing connection
+        this.closeConnection();
+
+        // Find a user to connect to
+        if (this.connectedUsers.length > 0) {
+            const targetUser = this.connectedUsers[0];
+            console.log('Reconnecting to:', targetUser.username);
+            this.connectToUser(targetUser.socketId);
+        } else {
+            // No users available, just update status
+            this.updateConnectionStatus('waiting', 'Waiting for others to join');
+        }
     }
 
     login(password, username) {
@@ -561,6 +587,7 @@ class ConnectionManager {
         const statusText = this.connectionStatus.querySelector('.status-text');
         const statusDot = this.connectionStatus.querySelector('.status-dot');
         const statusDetail = this.connectionStatus.querySelector('.status-detail');
+        const reconnectBtn = document.getElementById('reconnectBtn');
 
         if (!statusText || !statusDot || !statusDetail) return;
 
@@ -625,11 +652,17 @@ class ConnectionManager {
                 statusDot.className = 'status-dot error';
                 statusDetail.textContent = displayDetail || 'Connection failed - try again';
                 if (this.remoteVideoFrame) this.remoteVideoFrame.classList.add('hidden');
+                if (reconnectBtn) reconnectBtn.classList.remove('hidden');
                 break;
             default:
                 statusText.textContent = 'Not Connected';
                 statusDot.className = 'status-dot disconnected';
                 statusDetail.textContent = 'Click Connect to start';
+        }
+
+        // Hide reconnect button for non-failed states
+        if (displayState !== 'failed' && reconnectBtn) {
+            reconnectBtn.classList.add('hidden');
         }
     }
 

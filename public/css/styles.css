@@ -1871,6 +1871,40 @@ body.bg-hidden {
     line-height: 1.2;
 }
 
+/* Reconnect Button */
+.reconnect-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+}
+
+.reconnect-btn:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+.reconnect-btn:active {
+    transform: scale(0.95);
+}
+
+.reconnect-btn svg {
+    flex-shrink: 0;
+}
+
+.reconnect-btn.hidden {
+    display: none;
+}
+
 /* Achievements Button */
 .achievements-btn {
     position: fixed;
@@ -2196,7 +2230,7 @@ body.bg-hidden {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    pointer-events: auto;
+    pointer-events: none;
     z-index: 10;
     cursor: grab;
     object-fit: cover;

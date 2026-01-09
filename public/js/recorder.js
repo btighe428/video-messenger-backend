@@ -85,6 +85,7 @@ class VideoRecorder {
         // Set up dragging
         this.setupDragging();
         this.setupRemoteDragging();
+        this.setupLocalPreviewDragging();
 
         // DON'T initialize camera on page load - wait for Video mode
         // this.initializeCamera();
@@ -381,6 +382,100 @@ class VideoRecorder {
         const remoteVideoFrame = document.getElementById('remoteVideoFrame');
         if (remoteVideoFrame) {
             remoteVideoFrame.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+    }
+
+    setupLocalPreviewDragging() {
+        const videoPreviewDock = document.getElementById('videoPreviewDock');
+        if (!videoPreviewDock) return;
+
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        videoPreviewDock.addEventListener('mousedown', (e) => {
+            // Don't drag if clicking on buttons or interactive elements
+            if (e.target.closest('button') || e.target.tagName === 'BUTTON') {
+                return;
+            }
+
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            isDragging = true;
+            videoPreviewDock.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                this.setLocalPreviewTranslate(currentX, currentY);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                videoPreviewDock.style.cursor = 'grab';
+            }
+        });
+
+        // Touch support
+        videoPreviewDock.addEventListener('touchstart', (e) => {
+            if (e.target.closest('button') || e.target.tagName === 'BUTTON') {
+                return;
+            }
+            const touch = e.touches[0];
+            initialX = touch.clientX - xOffset;
+            initialY = touch.clientY - yOffset;
+
+            isDragging = true;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                const touch = e.touches[0];
+
+                currentX = touch.clientX - initialX;
+                currentY = touch.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                this.setLocalPreviewTranslate(currentX, currentY);
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+            }
+        });
+
+        // Set initial cursor
+        videoPreviewDock.style.cursor = 'grab';
+    }
+
+    setLocalPreviewTranslate(xPos, yPos) {
+        const videoPreviewDock = document.getElementById('videoPreviewDock');
+        if (videoPreviewDock) {
+            videoPreviewDock.style.transform = `translate(${xPos}px, ${yPos}px)`;
         }
     }
 

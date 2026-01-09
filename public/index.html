@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Video Messenger - Yahoo Mail</title>
-    <link rel="stylesheet" href="css/styles.css?v=7">
+    <link rel="stylesheet" href="css/styles.css?v=9">
     <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/studio.css">
     <link rel="stylesheet" href="css/studio-fabric.css?v=5">
@@ -56,6 +56,14 @@
             <span class="status-text">Not Connected</span>
             <span class="status-detail">Click Connect to start</span>
         </div>
+        <button id="reconnectBtn" class="reconnect-btn hidden" title="Reconnect">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span>Retry</span>
+        </button>
     </div>
 
     <!-- Top Navigation - Centered -->
@@ -759,14 +767,14 @@
     <!-- Menu Manager - Load first to handle all menu interactions -->
     <script src="js/menu-manager.js?v=1"></script>
 
-    <script src="js/connection.js?v=25"></script>
+    <script src="js/connection.js?v=26"></script>
     <script src="js/effects.js?v=17"></script>
     <script src="js/particles.js?v=17"></script>
     <script src="js/stickers.js?v=18"></script>
     <script src="js/achievements.js?v=17"></script>
-    <script src="js/recorder.js?v=17"></script>
+    <script src="js/recorder.js?v=18"></script>
     <script src="js/frames.js?v=17"></script>
-    <script src="js/studio.js?v=4"></script>
+    <script src="js/studio.js?v=5"></script>
 
     <!-- Fabric.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -885,78 +893,7 @@
                 }, true);
             }
 
-            // Make video preview draggable anywhere on the circle
-            if (videoPreviewDock) {
-                let isDragging = false;
-                let dragOffsetX = 0;
-                let dragOffsetY = 0;
-
-                videoPreviewDock.addEventListener('mousedown', function(e) {
-                    // Don't drag if clicking on buttons or interactive elements
-                    if (e.target.closest('button') ||
-                        e.target.closest('.sticker-item') ||
-                        e.target.closest('.sticker-controls') ||
-                        e.target.id === 'stickersCanvas') {
-                        return;
-                    }
-                    // Allow dragging when visible
-                    isDragging = true;
-                    const rect = videoPreviewDock.getBoundingClientRect();
-                    dragOffsetX = e.clientX - rect.left;
-                    dragOffsetY = e.clientY - rect.top;
-                    videoPreviewDock.style.cursor = 'grabbing';
-                    e.preventDefault();
-                });
-
-                document.addEventListener('mousemove', function(e) {
-                    if (!isDragging) return;
-                    const x = e.clientX - dragOffsetX;
-                    const y = e.clientY - dragOffsetY;
-                    videoPreviewDock.style.left = x + 'px';
-                    videoPreviewDock.style.top = y + 'px';
-                    videoPreviewDock.style.right = 'auto';
-                    videoPreviewDock.style.bottom = 'auto';
-                });
-
-                document.addEventListener('mouseup', function() {
-                    if (isDragging) {
-                        isDragging = false;
-                        videoPreviewDock.style.cursor = 'grab';
-                    }
-                });
-
-                // Touch support for mobile
-                videoPreviewDock.addEventListener('touchstart', function(e) {
-                    // Don't drag if touching buttons or interactive elements
-                    if (e.target.closest('button') ||
-                        e.target.closest('.sticker-item') ||
-                        e.target.closest('.sticker-controls') ||
-                        e.target.id === 'stickersCanvas') {
-                        return;
-                    }
-                    // Allow dragging when visible
-                    isDragging = true;
-                    const touch = e.touches[0];
-                    const rect = videoPreviewDock.getBoundingClientRect();
-                    dragOffsetX = touch.clientX - rect.left;
-                    dragOffsetY = touch.clientY - rect.top;
-                }, { passive: true });
-
-                document.addEventListener('touchmove', function(e) {
-                    if (!isDragging) return;
-                    const touch = e.touches[0];
-                    const x = touch.clientX - dragOffsetX;
-                    const y = touch.clientY - dragOffsetY;
-                    videoPreviewDock.style.left = x + 'px';
-                    videoPreviewDock.style.top = y + 'px';
-                    videoPreviewDock.style.right = 'auto';
-                    videoPreviewDock.style.bottom = 'auto';
-                }, { passive: true });
-
-                document.addEventListener('touchend', function() {
-                    isDragging = false;
-                });
-            }
+            // Local video preview dragging is now handled in recorder.js (setupLocalPreviewDragging)
 
             // Start in email mode (default)
             switchToEmail();
