@@ -854,20 +854,15 @@
                 currentMode = 'studio';
                 setActiveButton(studioToggleBtn);
 
-                // Check if video is active (camera stream running)
-                const previewVideo = document.getElementById('preview');
-                const isVideoActive = previewVideo && previewVideo.srcObject &&
-                    previewVideo.srcObject.getVideoTracks().some(track => track.enabled && track.readyState === 'live');
-
-                // Keep video preview visible if camera is active
-                if (isVideoActive) {
-                    if (draggableUI) draggableUI.classList.remove('hidden');
-                    if (videoPreviewDock) videoPreviewDock.classList.remove('hidden');
-                } else {
-                    if (draggableUI) draggableUI.classList.add('hidden');
-                    if (videoPreviewDock) videoPreviewDock.classList.add('hidden');
-                }
+                // Always show video preview in Studio mode and init camera
+                if (draggableUI) draggableUI.classList.remove('hidden');
+                if (videoPreviewDock) videoPreviewDock.classList.remove('hidden');
                 if (studioVideoPreview) studioVideoPreview.classList.add('hidden');
+
+                // Initialize camera when entering Studio mode
+                if (window.videoRecorder && window.videoRecorder.initializeCamera && !window.videoRecorder.stream) {
+                    window.videoRecorder.initializeCamera();
+                }
 
                 // Show studio
                 if (newStudioContainer) newStudioContainer.classList.remove('hidden');
