@@ -59,11 +59,25 @@ const workerSettings = {
     rtcMaxPort: parseInt(process.env.MEDIASOUP_MAX_PORT) || 10100,
 };
 
+// Get announced IP from env or try to auto-detect from hostname
+const getAnnouncedIp = () => {
+    if (process.env.ANNOUNCED_IP) {
+        return process.env.ANNOUNCED_IP;
+    }
+    // Fallback: use Render's hostname if available
+    if (process.env.RENDER_EXTERNAL_HOSTNAME) {
+        console.log(`[mediasoup] Using RENDER_EXTERNAL_HOSTNAME: ${process.env.RENDER_EXTERNAL_HOSTNAME}`);
+        return process.env.RENDER_EXTERNAL_HOSTNAME;
+    }
+    console.warn('[mediasoup] WARNING: ANNOUNCED_IP not set. NAT traversal may fail for some clients.');
+    return null;
+};
+
 const webRtcTransportOptions = {
     listenIps: [
         {
             ip: '0.0.0.0',
-            announcedIp: process.env.ANNOUNCED_IP || null,
+            announcedIp: getAnnouncedIp(),
         },
     ],
     initialAvailableOutgoingBitrate: 1000000,
