@@ -93,8 +93,8 @@ class VideoRecorder {
         this.setupRemoteDragging();
         this.setupLocalPreviewDragging();
 
-        // DON'T initialize camera on page load - wait for Video mode
-        // this.initializeCamera();
+        // Auto-request camera permissions on page load for seamless experience
+        this.autoRequestPermissions();
 
         // Initialize particle system
         if (window.ParticleSystem) {
@@ -507,7 +507,42 @@ class VideoRecorder {
         }
     }
 
+    // Auto-request camera/mic permissions on page load for seamless SFU experience
+    async autoRequestPermissions() {
+        try {
+            console.log('[AutoPermissions] Requesting camera and microphone access...');
+
+            // Request permissions immediately
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user' },
+                audio: true
+            });
+
+            // Store the stream
+            this.stream = stream;
+            this.preview.srcObject = stream;
+
+            console.log('[AutoPermissions] Permissions granted, camera ready');
+
+            // Notify SFU manager that stream is ready
+            if (window.sfuConnectionManager && window.connectionManager?.isLoggedIn) {
+                console.log('[AutoPermissions] Starting SFU with stream');
+                window.sfuConnectionManager.start(stream);
+            }
+
+        } catch (error) {
+            console.warn('[AutoPermissions] Could not auto-request permissions:', error.message);
+            // Don't show error - user can manually trigger later
+        }
+    }
+
     async initializeCamera() {
+        // If stream already exists from auto-request, skip
+        if (this.stream) {
+            console.log('Camera already initialized from auto-request');
+            return;
+        }
+
         try {
             console.log('Requesting camera access...');
             const quality = this.qualitySelect ? this.qualitySelect.value : '480';

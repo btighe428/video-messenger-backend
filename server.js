@@ -5,6 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
+const mediasoup = require('mediasoup');
 
 const app = express();
 const server = http.createServer(app);
@@ -12,9 +13,149 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
+// ==================== MEDIASOUP CONFIGURATION ====================
+
+const mediaCodecs = [
+    {
+        kind: 'audio',
+        mimeType: 'audio/opus',
+        clockRate: 48000,
+        channels: 2,
+    },
+    {
+        kind: 'video',
+        mimeType: 'video/VP8',
+        clockRate: 90000,
+        parameters: {
+            'x-google-start-bitrate': 1000,
+        },
+    },
+    {
+        kind: 'video',
+        mimeType: 'video/VP9',
+        clockRate: 90000,
+        parameters: {
+            'profile-id': 2,
+            'x-google-start-bitrate': 1000,
+        },
+    },
+    {
+        kind: 'video',
+        mimeType: 'video/H264',
+        clockRate: 90000,
+        parameters: {
+            'packetization-mode': 1,
+            'profile-level-id': '42e01f',
+            'level-asymmetry-allowed': 1,
+            'x-google-start-bitrate': 1000,
+        },
+    },
+];
+
+const workerSettings = {
+    logLevel: 'warn',
+    logTags: ['info', 'ice', 'dtls', 'rtp', 'srtp', 'rtcp'],
+    rtcMinPort: parseInt(process.env.MEDIASOUP_MIN_PORT) || 10000,
+    rtcMaxPort: parseInt(process.env.MEDIASOUP_MAX_PORT) || 10100,
+};
+
+const webRtcTransportOptions = {
+    listenIps: [
+        {
+            ip: '0.0.0.0',
+            announcedIp: process.env.ANNOUNCED_IP || null,
+        },
+    ],
+    initialAvailableOutgoingBitrate: 1000000,
+    minimumAvailableOutgoingBitrate: 600000,
+    maxSctpMessageSize: 262144,
+    maxIncomingBitrate: 1500000,
+    enableUdp: true,
+    enableTcp: true,
+    preferUdp: true,
+};
+
+// ==================== MEDIASOUP STATE ====================
+
+let mediasoupWorker = null;
+let mediasoupRouter = null;
+const peers = new Map(); // socketId -> { transports, producers, consumers }
+
+// ==================== MEDIASOUP INITIALIZATION ====================
+
+async function createWorker() {
+    const worker = await mediasoup.createWorker(workerSettings);
+
+    worker.on('died', () => {
+        console.error('mediasoup Worker died, exiting...');
+        process.exit(1);
+    });
+
+    console.log(`mediasoup Worker created [pid:${worker.pid}]`);
+    return worker;
+}
+
+async function createRouter(worker) {
+    const router = await worker.createRouter({ mediaCodecs });
+    console.log(`mediasoup Router created [id:${router.id}]`);
+    return router;
+}
+
+async function initializeMediasoup() {
+    try {
+        mediasoupWorker = await createWorker();
+        mediasoupRouter = await createRouter(mediasoupWorker);
+        console.log('mediasoup initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize mediasoup:', error);
+        // Continue without mediasoup - fall back to P2P
+    }
+}
+
+// ==================== PEER MANAGEMENT ====================
+
+function createPeer(socketId) {
+    return {
+        socketId,
+        transports: new Map(),  // transportId -> Transport
+        producers: new Map(),   // producerId -> Producer
+        consumers: new Map(),   // consumerId -> Consumer
+    };
+}
+
+function getPeer(socketId) {
+    if (!peers.has(socketId)) {
+        peers.set(socketId, createPeer(socketId));
+    }
+    return peers.get(socketId);
+}
+
+function cleanupPeer(socketId) {
+    const peer = peers.get(socketId);
+    if (!peer) return;
+
+    // Close all consumers
+    for (const consumer of peer.consumers.values()) {
+        consumer.close();
+    }
+
+    // Close all producers
+    for (const producer of peer.producers.values()) {
+        producer.close();
+    }
+
+    // Close all transports
+    for (const transport of peer.transports.values()) {
+        transport.close();
+    }
+
+    peers.delete(socketId);
+    console.log(`Cleaned up peer resources for ${socketId}`);
+}
+
 const io = new Server(server, {
     cors: {
-        origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app', 'https://video-messaging-v4-adwalnctx-brians-projects-61d69cd7.vercel.app'],
+        origin: [CLIENT_URL, 'http://localhost:3000', 'https://video-messaging-v4.vercel.app', 'https://bright-hummingbird-dfbf58.netlify.app', 'https://video-messaging-v4-adwalnctx-brians-projects-61d69cd7.vercel.app'],
         methods: ["GET", "POST"],
         credentials: true
     },
@@ -27,7 +168,7 @@ const io = new Server(server, {
 
 // Enable CORS for frontend domain
 app.use(cors({
-    origin: [CLIENT_URL, 'http://localhost:3000', 'https://bright-hummingbird-dfbf58.netlify.app', 'https://video-messaging-v4-adwalnctx-brians-projects-61d69cd7.vercel.app'],
+    origin: [CLIENT_URL, 'http://localhost:3000', 'https://video-messaging-v4.vercel.app', 'https://bright-hummingbird-dfbf58.netlify.app', 'https://video-messaging-v4-adwalnctx-brians-projects-61d69cd7.vercel.app'],
     credentials: true
 }));
 
@@ -277,6 +418,186 @@ io.on('connection', (socket) => {
         });
     });
 
+    // ==================== MEDIASOUP SIGNALING EVENTS ====================
+
+    // Get router RTP capabilities
+    socket.on('getRouterRtpCapabilities', (callback) => {
+        if (!mediasoupRouter) {
+            callback({ error: 'mediasoup not initialized' });
+            return;
+        }
+        callback({ rtpCapabilities: mediasoupRouter.rtpCapabilities });
+    });
+
+    // Create WebRTC transport
+    socket.on('createWebRtcTransport', async (data, callback) => {
+        if (!mediasoupRouter) {
+            callback({ error: 'mediasoup not initialized' });
+            return;
+        }
+
+        try {
+            const transport = await mediasoupRouter.createWebRtcTransport(webRtcTransportOptions);
+            const peer = getPeer(socket.id);
+            peer.transports.set(transport.id, transport);
+
+            transport.on('dtlsstatechange', (dtlsState) => {
+                if (dtlsState === 'closed') {
+                    transport.close();
+                    peer.transports.delete(transport.id);
+                }
+            });
+
+            callback({
+                id: transport.id,
+                iceParameters: transport.iceParameters,
+                iceCandidates: transport.iceCandidates,
+                dtlsParameters: transport.dtlsParameters,
+            });
+
+            console.log(`Transport created for ${socket.id}: ${transport.id}`);
+        } catch (error) {
+            console.error('createWebRtcTransport error:', error);
+            callback({ error: error.message });
+        }
+    });
+
+    // Connect transport (DTLS handshake)
+    socket.on('connectWebRtcTransport', async (data, callback) => {
+        const { transportId, dtlsParameters } = data;
+        const peer = getPeer(socket.id);
+        const transport = peer.transports.get(transportId);
+
+        if (!transport) {
+            callback({ error: 'Transport not found' });
+            return;
+        }
+
+        try {
+            await transport.connect({ dtlsParameters });
+            callback({ success: true });
+            console.log(`Transport connected for ${socket.id}: ${transportId}`);
+        } catch (error) {
+            console.error('connectWebRtcTransport error:', error);
+            callback({ error: error.message });
+        }
+    });
+
+    // Produce (client sends media)
+    socket.on('produce', async (data, callback) => {
+        const { transportId, kind, rtpParameters } = data;
+        const peer = getPeer(socket.id);
+        const transport = peer.transports.get(transportId);
+
+        if (!transport) {
+            callback({ error: 'Transport not found' });
+            return;
+        }
+
+        try {
+            const producer = await transport.produce({ kind, rtpParameters });
+            peer.producers.set(producer.id, producer);
+
+            producer.on('transportclose', () => {
+                producer.close();
+                peer.producers.delete(producer.id);
+            });
+
+            // Notify all other peers about this new producer
+            const user = connectedUsers.get(socket.id);
+            socket.broadcast.emit('newProducer', {
+                producerId: producer.id,
+                peerId: socket.id,
+                peerName: user?.username || 'Guest',
+                kind: kind,
+            });
+
+            callback({ producerId: producer.id });
+            console.log(`Producer created for ${socket.id}: ${producer.id} (${kind})`);
+        } catch (error) {
+            console.error('produce error:', error);
+            callback({ error: error.message });
+        }
+    });
+
+    // Consume (client receives media)
+    socket.on('consume', async (data, callback) => {
+        const { producerId, rtpCapabilities } = data;
+        const peer = getPeer(socket.id);
+
+        if (!mediasoupRouter.canConsume({ producerId, rtpCapabilities })) {
+            callback({ error: 'Cannot consume' });
+            return;
+        }
+
+        // Find a receive transport for this peer
+        let recvTransport = null;
+        for (const transport of peer.transports.values()) {
+            // Use the second transport created (recv transport)
+            if (!transport.appData?.producing) {
+                recvTransport = transport;
+                break;
+            }
+        }
+
+        if (!recvTransport) {
+            callback({ error: 'No receive transport found' });
+            return;
+        }
+
+        try {
+            const consumer = await recvTransport.consume({
+                producerId,
+                rtpCapabilities,
+                paused: false,
+            });
+
+            peer.consumers.set(consumer.id, consumer);
+
+            consumer.on('transportclose', () => {
+                consumer.close();
+                peer.consumers.delete(consumer.id);
+            });
+
+            consumer.on('producerclose', () => {
+                socket.emit('consumerClosed', { consumerId: consumer.id });
+                consumer.close();
+                peer.consumers.delete(consumer.id);
+            });
+
+            callback({
+                consumerId: consumer.id,
+                producerId: producerId,
+                kind: consumer.kind,
+                rtpParameters: consumer.rtpParameters,
+            });
+
+            console.log(`Consumer created for ${socket.id}: ${consumer.id}`);
+        } catch (error) {
+            console.error('consume error:', error);
+            callback({ error: error.message });
+        }
+    });
+
+    // Get all existing producers (for new joiners)
+    socket.on('getProducers', (callback) => {
+        const producerList = [];
+        for (const [peerId, peer] of peers) {
+            if (peerId !== socket.id) {
+                const user = connectedUsers.get(peerId);
+                for (const [producerId, producer] of peer.producers) {
+                    producerList.push({
+                        producerId,
+                        peerId,
+                        peerName: user?.username || 'Guest',
+                        kind: producer.kind,
+                    });
+                }
+            }
+        }
+        callback({ producers: producerList });
+    });
+
     // Handle video message sending
     socket.on('send-video-message', (data) => {
         const { videoUrl, filename, size, to } = data;
@@ -516,20 +837,39 @@ io.on('connection', (socket) => {
             console.log(`User disconnected: ${user.username} (${socket.id})`);
             connectedUsers.delete(socket.id);
             socket.broadcast.emit('user-left', { socketId: socket.id });
+
+            // Cleanup mediasoup resources
+            cleanupPeer(socket.id);
+
+            // Notify others about closed producers
+            const peer = peers.get(socket.id);
+            if (peer) {
+                for (const producerId of peer.producers.keys()) {
+                    socket.broadcast.emit('producerClosed', { producerId });
+                }
+            }
         }
     });
 });
 
-// Start server
-server.listen(PORT, () => {
-    console.log(`\n🎥 Video Messenger Server`);
-    console.log(`================================`);
-    console.log(`Server running on: http://localhost:${PORT}`);
-    console.log(`Upload endpoint: http://localhost:${PORT}/upload`);
-    console.log(`Uploads folder: ${uploadsDir}`);
-    console.log(`WebSocket: Enabled`);
-    console.log(`================================\n`);
-});
+// Start server with mediasoup initialization
+async function startServer() {
+    // Initialize mediasoup
+    await initializeMediasoup();
+
+    server.listen(PORT, () => {
+        console.log(`\n🎥 Video Messenger Server`);
+        console.log(`================================`);
+        console.log(`Server running on: http://localhost:${PORT}`);
+        console.log(`Upload endpoint: http://localhost:${PORT}/upload`);
+        console.log(`Uploads folder: ${uploadsDir}`);
+        console.log(`WebSocket: Enabled`);
+        console.log(`mediasoup: ${mediasoupRouter ? 'Enabled' : 'Disabled'}`);
+        console.log(`================================\n`);
+    });
+}
+
+startServer().catch(console.error);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

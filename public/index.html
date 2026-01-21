@@ -23,7 +23,13 @@
         </div>
     </div>
 
-    <!-- Remote Video Preview - Top Left -->
+    <!-- Multi-Party Video Container - Circular Honeycomb Layout (Apple Watch style) -->
+    <div id="videoHoneycomb" class="video-honeycomb hidden">
+        <!-- Video circles are dynamically added here by SFU connection manager -->
+        <!-- Each participant gets a circular video positioned in honeycomb pattern -->
+    </div>
+
+    <!-- Remote Video Preview - Top Left (Legacy P2P - hidden when using SFU) -->
     <div class="remote-video-frame hidden" id="remoteVideoFrame">
         <div class="video-frame remote">
             <video id="remoteVideo" autoplay muted playsinline></video>
@@ -776,6 +782,7 @@
     <script src="js/menu-manager.js?v=1"></script>
 
     <script src="js/connection.js?v=26"></script>
+    <script src="js/sfu-connection.js?v=1"></script>
     <script src="js/effects.js?v=17"></script>
     <script src="js/particles.js?v=17"></script>
     <script src="js/stickers.js?v=18"></script>
@@ -786,6 +793,9 @@
 
     <!-- Fabric.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+    <!-- mediasoup-client for SFU -->
+    <script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3/lib/mediasoup-client.min.js"></script>
 
     <!-- New Fabric.js Studio -->
     <script src="js/studio-fabric.js?v=7"></script>

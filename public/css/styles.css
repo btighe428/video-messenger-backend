@@ -2568,3 +2568,127 @@ body.bg-hidden {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ==================== HONEYCOMB VIDEO LAYOUT (Apple Watch Style) ==================== */
+
+.video-honeycomb {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 120px;
+    z-index: 850;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.video-honeycomb.hidden {
+    display: none;
+}
+
+.honeycomb-video {
+    position: absolute;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 3px rgba(255, 255, 255, 0.1),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.3s var(--ease-spring), box-shadow 0.3s ease;
+}
+
+.honeycomb-video:hover {
+    transform: scale(1.05);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.5),
+        0 0 0 3px rgba(255, 255, 255, 0.2),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.honeycomb-video.local {
+    box-shadow:
+        0 8px 32px rgba(16, 185, 129, 0.3),
+        0 0 0 3px rgba(16, 185, 129, 0.5),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.honeycomb-video.local:hover {
+    box-shadow:
+        0 12px 40px rgba(16, 185, 129, 0.4),
+        0 0 0 4px rgba(16, 185, 129, 0.6),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.honeycomb-video.glow {
+    animation: honeycombGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes honeycombGlow {
+    0% {
+        box-shadow:
+            0 8px 32px rgba(16, 185, 129, 0.3),
+            0 0 0 3px rgba(16, 185, 129, 0.5),
+            0 0 20px rgba(16, 185, 129, 0.2),
+            inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+    100% {
+        box-shadow:
+            0 8px 32px rgba(16, 185, 129, 0.5),
+            0 0 0 4px rgba(16, 185, 129, 0.7),
+            0 0 40px rgba(16, 185, 129, 0.4),
+            inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+}
+
+.honeycomb-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.honeycomb-label {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.honeycomb-video.local .honeycomb-label {
+    background: rgba(16, 185, 129, 0.8);
+}
+
+/* Responsive honeycomb */
+@media (max-width: 768px) {
+    .video-honeycomb {
+        top: 60px;
+        bottom: 100px;
+    }
+
+    .honeycomb-label {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .honeycomb-video {
+        box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.4),
+            0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+}
