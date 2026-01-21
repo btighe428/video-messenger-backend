@@ -1,7 +1,7 @@
 // Configuration
 const BACKEND_URL = window.location.hostname.includes('localhost')
     ? 'http://localhost:3000'
-    : 'https://video-messenger-backend.onrender.com'; // Render backend URL
+    : 'https://video-messenger-backend.fly.dev'; // Fly.io backend URL (UDP support for mediasoup)
 
 // Random username generator (Color + Animal)
 function generateRandomUsername() {

@@ -64,6 +64,12 @@ const getAnnouncedIp = () => {
     if (process.env.ANNOUNCED_IP) {
         return process.env.ANNOUNCED_IP;
     }
+    // Fallback: use Fly.io hostname if available
+    if (process.env.FLY_APP_NAME) {
+        const flyHost = `${process.env.FLY_APP_NAME}.fly.dev`;
+        console.log(`[mediasoup] Using Fly.io hostname: ${flyHost}`);
+        return flyHost;
+    }
     // Fallback: use Render's hostname if available
     if (process.env.RENDER_EXTERNAL_HOSTNAME) {
         console.log(`[mediasoup] Using RENDER_EXTERNAL_HOSTNAME: ${process.env.RENDER_EXTERNAL_HOSTNAME}`);
