@@ -163,7 +163,7 @@ body.bg-hidden {
     border-radius: 50%;
     overflow: hidden;
     background: var(--bg-tertiary);
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--shadow-xl), 0 0 0 3px rgba(52, 211, 153, 0.8), 0 0 20px rgba(52, 211, 153, 0.4);
     cursor: grab;
 }
 
@@ -1001,13 +1001,13 @@ body.bg-hidden {
 
 .btn-zoom {
     bottom: -56px;
-    left: 50%;
+    left: calc(50% - 28px);
     transform: translateX(-50%);
 }
 
 .btn-minimize {
     bottom: -56px;
-    left: calc(50% + 52px);
+    left: calc(50% + 28px);
     transform: translateX(-50%);
 }
 
@@ -1041,11 +1041,11 @@ body.bg-hidden {
 /* Sticker Edit Button */
 .btn-sticker-edit {
     position: absolute;
-    bottom: -44px;
-    left: calc(50% + 44px);
+    bottom: -56px;
+    left: calc(50% + 52px);
     transform: translateX(-50%);
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: var(--bg-main);
     border: 1px solid var(--border-main);
@@ -1055,7 +1055,7 @@ body.bg-hidden {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    z-index: 100;
+    z-index: 30;
 }
 
 .btn-sticker-edit:hover {
@@ -1752,7 +1752,7 @@ body.bg-hidden {
 
 /* Video Label */
 .video-label {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(52, 211, 153, 0.9);
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -1760,6 +1760,7 @@ body.bg-hidden {
     font-weight: 600;
     backdrop-filter: blur(10px);
     pointer-events: none;
+    box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
 }
 
 /* Mute Button */
@@ -2643,6 +2644,36 @@ body.bg-hidden {
     }
 }
 
+/* Smiling user - magnetic attraction active */
+.honeycomb-video.smiling {
+    animation: smileGlow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes smileGlow {
+    0% {
+        box-shadow:
+            0 8px 32px rgba(255, 200, 50, 0.4),
+            0 0 0 3px rgba(255, 200, 50, 0.6),
+            0 0 30px rgba(255, 200, 50, 0.3),
+            inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+    100% {
+        box-shadow:
+            0 12px 40px rgba(255, 220, 80, 0.6),
+            0 0 0 4px rgba(255, 220, 80, 0.8),
+            0 0 50px rgba(255, 220, 80, 0.5),
+            inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* Local video preview smiling indicator */
+.video-frame.smiling {
+    box-shadow:
+        0 8px 32px rgba(255, 200, 50, 0.4),
+        0 0 0 3px rgba(255, 200, 50, 0.6),
+        0 0 20px rgba(255, 200, 50, 0.3) !important;
+}
+
 .honeycomb-video video {
     width: 100%;
     height: 100%;
@@ -2672,6 +2703,113 @@ body.bg-hidden {
     background: rgba(16, 185, 129, 0.8);
 }
 
+/* ==================== SHARED REALITY: Canvas Pinning ==================== */
+/* Video circles transform with Fabric.js canvas in Studio mode */
+
+.video-honeycomb.canvas-pinned {
+    /* Override default positioning - JS sets explicit top/left/width/height */
+    transform-origin: 0 0;
+    will-change: transform;
+    overflow: visible; /* Allow circles to extend beyond when transformed */
+    z-index: 860; /* Above canvas but below other overlays */
+}
+
+/* Smooth transitions for formation changes */
+.honeycomb-video {
+    transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.5s ease;
+}
+
+/* Formation: Audience mode - presenter highlight */
+.video-honeycomb.formation-audience .honeycomb-video.presenter {
+    box-shadow:
+        0 0 0 4px gold,
+        0 12px 40px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 215, 0, 0.3);
+}
+
+.video-honeycomb.formation-audience .honeycomb-video.presenter .honeycomb-label {
+    background: linear-gradient(135deg, #ffd700, #ffed4a);
+    color: #1a1a1a;
+}
+
+/* Formation: Stack mode - z-index layering */
+.video-honeycomb.formation-stack .honeycomb-video {
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* ==================== FORMATION CONTROLS ==================== */
+
+.formation-controls {
+    position: fixed;
+    bottom: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 10px 16px;
+    border-radius: 28px;
+    z-index: 900;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.formation-controls.hidden {
+    display: none;
+}
+
+.formation-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.formation-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.formation-btn.active {
+    background: rgba(125, 46, 255, 0.6);
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(125, 46, 255, 0.4);
+}
+
+.formation-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* Formation controls responsive */
+@media (max-width: 768px) {
+    .formation-controls {
+        bottom: 160px;
+        padding: 8px 12px;
+        gap: 6px;
+    }
+
+    .formation-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .formation-icon {
+        font-size: 18px;
+    }
+}
+
 /* Responsive honeycomb */
 @media (max-width: 768px) {
     .video-honeycomb {
@@ -2690,5 +2828,154 @@ body.bg-hidden {
         box-shadow:
             0 4px 16px rgba(0, 0, 0, 0.4),
             0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* ==================== STUDIO MODE MOBILE OVERRIDES ==================== */
+
+/* When in Studio mode, adjust video preview for mobile */
+@media (max-width: 768px) {
+    /* Fabric.js studio container mobile layout */
+    .studio-fabric-container {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Video preview dock in studio mode - position above bottom toolbar */
+    .studio-fabric-container ~ .video-preview-dock,
+    body.studio-active .video-preview-dock {
+        bottom: 100px !important;
+        right: 10px !important;
+        width: 120px !important;
+        height: 120px !important;
+        z-index: 500;
+    }
+
+    .studio-fabric-container ~ .video-preview-dock.zoomed,
+    body.studio-active .video-preview-dock.zoomed {
+        width: 180px !important;
+        height: 180px !important;
+    }
+
+    /* Connection status - keep visible but compact */
+    .connection-status {
+        top: 10px;
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: calc(100% - 80px);
+        font-size: 11px;
+        padding: 6px 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Navigation header mobile adjustments */
+    .top-nav,
+    .nav-container {
+        flex-wrap: nowrap;
+        gap: 4px;
+        padding: 8px 12px;
+    }
+
+    .nav-toggle-group {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .nav-toggle-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .nav-toggle-btn span {
+        display: none;
+    }
+
+    /* Show only icons in nav on mobile */
+    .nav-toggle-btn svg {
+        margin-right: 0;
+    }
+
+    /* Mode toggle pills compact on mobile */
+    .mode-toggle {
+        padding: 4px;
+        gap: 2px;
+    }
+
+    .mode-toggle-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    /* Honeycomb adjustments when studio is active */
+    body.studio-active .video-honeycomb {
+        top: 50px;
+        bottom: 90px;
+    }
+
+    /* Controls dock position for mobile */
+    .controls-dock {
+        bottom: 100px !important;
+        right: 10px !important;
+    }
+
+    /* Effects dock position for mobile */
+    .effects-dock {
+        bottom: 100px !important;
+        left: 10px !important;
+        right: auto !important;
+    }
+}
+
+/* Small phone adjustments */
+@media (max-width: 480px) {
+    .studio-fabric-container ~ .video-preview-dock,
+    body.studio-active .video-preview-dock {
+        bottom: 80px !important;
+        width: 100px !important;
+        height: 100px !important;
+    }
+
+    .connection-status {
+        font-size: 10px;
+        padding: 4px 10px;
+    }
+
+    .nav-toggle-btn {
+        padding: 6px 8px;
+    }
+
+    /* Hide text labels completely on small phones */
+    .mode-toggle-btn {
+        padding: 4px 8px;
+    }
+
+    .studio-fabric-container ~ .video-preview-dock .btn-zoom,
+    .studio-fabric-container ~ .video-preview-dock .btn-minimize {
+        width: 28px;
+        height: 28px;
+        bottom: -36px;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .studio-fabric-container ~ .video-preview-dock,
+    body.studio-active .video-preview-dock {
+        bottom: 10px !important;
+        right: 10px !important;
+        width: 100px !important;
+        height: 100px !important;
+    }
+
+    .connection-status {
+        top: 5px;
+    }
+
+    body.studio-active .video-honeycomb {
+        top: 40px;
+        bottom: 70px;
     }
 }

@@ -1,0 +1,25 @@
+# Video Messaging Application Summary
+
+## Overview
+
+Video Messaging is a real-time, multi-party video communication platform that combines WebRTC video conferencing with a rich creative studio environment. Built on a modern JavaScript stack with Express.js backend and LiveKit Cloud for scalable media routing, the application enables users to connect instantly without authentication, identified by randomly generated usernames (e.g., "Pink-Rhino", "Blue-Hawk"). The frontend, deployed on Vercel, communicates with a Fly.io-hosted backend that handles signaling, token generation, and video message storage. This architecture separates static assets from compute-intensive media operations, allowing the system to scale efficiently while maintaining low latency for real-time interactions.
+
+## Multi-Party Video Conferencing
+
+The core video functionality leverages LiveKit, a cloud-based Selective Forwarding Unit (SFU) that intelligently routes media streams between participants. Unlike peer-to-peer mesh topologies where bandwidth requirements grow quadratically with participant count, the SFU architecture allows each client to upload a single stream while receiving optimized versions of all other participants' streams. Video participants appear as draggable circular elements arranged in a responsive honeycomb layout that dynamically adjusts based on participant count—from side-by-side positioning for two users to grid arrangements for larger groups. The system maintains minimum circle sizes of 150 pixels regardless of participant count, ensuring visibility even in crowded sessions. Local video displays with a distinctive green glow and "You" label, while remote participants show their usernames with muted audio by default to prevent feedback loops.
+
+## Creative Studio Environment
+
+The Studio mode provides a Fabric.js-powered canvas for creating rich visual content. Users can add text with customizable fonts and colors, draw freehand with adjustable brush sizes, place stickers and emojis, insert clipart from a curated library, and drag animated GIFs from Giphy directly onto the canvas. GIF animation is preserved through a continuous render loop that refreshes the canvas at 60fps when animated content is present. The selfie feature captures circular snapshots from the live camera feed with a theatrical 3-2-1 countdown and white flash effect, simulating a professional photo booth experience. All canvas objects support selection, transformation, rotation, and deletion, with full undo/redo capability maintained through a history stack.
+
+## AR Effects and Video Processing
+
+MediaPipe powers the augmented reality effects system, providing real-time face mesh detection for overlaying virtual accessories like glasses, and selfie segmentation for background removal and replacement. The effects pipeline processes each video frame through a canvas-based compositor that layers the original video, segmentation masks, face mesh overlays, particle effects (confetti, sparkles), and user-placed stickers in correct z-order. Background replacement supports both solid colors and custom images, with smooth edge blending achieved through feathered alpha masks. The particle system generates physics-based animations with configurable gravity, velocity, and lifetime parameters, enabling celebratory confetti bursts and ambient sparkle effects that respond to face position.
+
+## Video Recording and Messaging
+
+Users can record video messages up to 60 seconds in duration, with the recording capturing the fully composited output including all active effects, stickers, and overlays. The MediaRecorder API captures the canvas stream at 30fps with VP8/WebM encoding, producing compact files suitable for quick sharing. Recorded messages are uploaded to the Fly.io backend via multipart form submission and stored in a persistent uploads directory. The messaging system supports both direct video playback within the application and potential integration points for email delivery through the Oasis Email interface. Recording state is indicated by a pulsing red dot overlay, and users can preview their recording before deciding to send or discard.
+
+## Technical Architecture and Deployment
+
+The application follows a JAMstack-inspired architecture with clear separation between the static frontend (HTML, CSS, vanilla JavaScript) deployed on Vercel's global CDN, and the Node.js backend on Fly.io handling WebSocket connections and API endpoints. Socket.IO manages real-time bidirectional communication for user presence, signaling, and sticker synchronization across connected clients. The LiveKit integration uses server-side token generation with scoped permissions (publish, subscribe, data channels) to ensure secure room access without exposing API credentials to clients. CSS custom properties enable consistent theming with iOS-inspired design language, while responsive breakpoints ensure usability across desktop and mobile viewports. The codebase emphasizes progressive enhancement—core video chat functions without effects, while AR features gracefully degrade on unsupported browsers or devices lacking camera access.

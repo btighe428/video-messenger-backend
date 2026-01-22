@@ -1,7 +1,12 @@
 // Configuration
 const BACKEND_URL = window.location.hostname.includes('localhost')
     ? 'http://localhost:3000'
-    : 'https://video-messenger-backend.fly.dev'; // Fly.io backend URL (UDP support for mediasoup)
+    : 'https://video-messenger-backend.fly.dev'; // Fly.io backend URL
+
+// Check if SFU (LiveKit) is handling video - skip P2P if so
+function isSFUActive() {
+    return window.sfuConnectionManager?.isConnected === true;
+}
 
 // Random username generator (Color + Animal)
 function generateRandomUsername() {
@@ -181,7 +186,7 @@ class ConnectionManager {
     }
 
     setupSocketHandlers() {
-        this.socket.on('login-success', (data) => {
+        this.socket.on('login-success', async (data) => {
             this.isLoggedIn = true;
             this.mySocketId = data.socketId;
             this.loginModal.classList.add('hidden');
@@ -197,6 +202,28 @@ class ConnectionManager {
                 connectBtn.classList.add('connected');
                 const label = connectBtn.querySelector('.btn-label');
                 if (label) label.textContent = 'Connected';
+            }
+
+            // Start SFU for multi-party video
+            if (window.sfuConnectionManager) {
+                const localStream = window.videoRecorder?.stream;
+                if (localStream) {
+                    console.log('[ConnectionManager] Starting SFU with local stream...');
+                    await window.sfuConnectionManager.start(localStream);
+                } else {
+                    console.log('[ConnectionManager] Waiting for camera stream before starting SFU...');
+                    // Retry after camera is ready
+                    const checkStream = setInterval(async () => {
+                        const stream = window.videoRecorder?.stream;
+                        if (stream) {
+                            clearInterval(checkStream);
+                            console.log('[ConnectionManager] Camera ready, starting SFU...');
+                            await window.sfuConnectionManager.start(stream);
+                        }
+                    }, 500);
+                    // Give up after 10 seconds
+                    setTimeout(() => clearInterval(checkStream), 10000);
+                }
             }
         });
 
@@ -314,6 +341,12 @@ class ConnectionManager {
     }
 
     async connectToUser(remoteSocketId) {
+        // Skip P2P when SFU is enabled - SFU handles multi-party connections
+        if (window.sfuConnectionManager?.isConnected) {
+            console.log('[P2P] Skipping - SFU is handling connections');
+            return;
+        }
+
         console.log('Connecting to user:', remoteSocketId);
         this.remoteSocketId = remoteSocketId;
 
@@ -349,6 +382,11 @@ class ConnectionManager {
             // Handle incoming remote stream
             this.peerConnection.ontrack = (event) => {
                 console.log('🎥 Received remote track:', event.track.kind);
+                // Skip P2P video if SFU (LiveKit) is handling video
+                if (isSFUActive()) {
+                    console.log('[P2P] Ignoring track - SFU is active');
+                    return;
+                }
                 if (!this.remoteStream) {
                     this.remoteStream = new MediaStream();
                     this.remoteVideo.srcObject = this.remoteStream;
@@ -385,7 +423,10 @@ class ConnectionManager {
                 // Only update UI status, don't close connection on temporary states
                 if (state === 'connected') {
                     this.updateConnectionStatus('connected', 'Video chat active');
-                    this.remoteVideoFrame.classList.remove('hidden');
+                    // Only show P2P frame if SFU is not active
+                    if (!isSFUActive()) {
+                        this.remoteVideoFrame.classList.remove('hidden');
+                    }
                 } else if (state === 'failed') {
                     this.updateConnectionStatus('failed', 'Connection failed - try again');
                 } else if (state === 'closed') {
@@ -455,6 +496,11 @@ class ConnectionManager {
             // Handle incoming remote stream
             this.peerConnection.ontrack = (event) => {
                 console.log('🎥 Received remote track (in handleOffer):', event.track.kind);
+                // Skip P2P video if SFU (LiveKit) is handling video
+                if (isSFUActive()) {
+                    console.log('[P2P] Ignoring track - SFU is active');
+                    return;
+                }
                 if (!this.remoteStream) {
                     this.remoteStream = new MediaStream();
                     this.remoteVideo.srcObject = this.remoteStream;
@@ -491,7 +537,10 @@ class ConnectionManager {
                 // Only update UI status, don't close connection on temporary states
                 if (state === 'connected') {
                     this.updateConnectionStatus('connected', 'Video chat active');
-                    this.remoteVideoFrame.classList.remove('hidden');
+                    // Only show P2P frame if SFU is not active
+                    if (!isSFUActive()) {
+                        this.remoteVideoFrame.classList.remove('hidden');
+                    }
                 } else if (state === 'failed') {
                     this.updateConnectionStatus('failed', 'Connection failed - try again');
                 } else if (state === 'closed') {

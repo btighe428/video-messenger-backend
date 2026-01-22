@@ -530,15 +530,30 @@ class StudioPanels {
     // ==================== CLIPART PANEL ====================
 
     renderClipartPanel() {
-        // Get clipart items from existing studio
-        const clipartItems = [];
-        for (let i = 54; i <= 75; i++) {
-            clipartItems.push({
-                id: i.toString(),
-                src: `/clipart/Untitled design (${i}).svg`,
-                name: `Design ${i - 53}`
-            });
-        }
+        // Comprehensive clipart collection
+        const clipartItems = [
+            // Schemes & Graphs (business/chart graphics)
+            ...Array.from({length: 15}, (_, i) => ({
+                id: `graph-${i + 1}`,
+                src: `/clipart/Schemes & Graphs LITE ${i + 1}.png`,
+                name: `Graph ${i + 1}`,
+                category: 'graphs'
+            })),
+            // Geometric shapes
+            ...Array.from({length: 14}, (_, i) => ({
+                id: `shape-${String(i + 1).padStart(2, '0')}`,
+                src: `/clipart/shape-${String(i + 1).padStart(2, '0')}.svg`,
+                name: `Shape ${i + 1}`,
+                category: 'shapes'
+            })),
+            // Design illustrations
+            ...Array.from({length: 22}, (_, i) => ({
+                id: (54 + i).toString(),
+                src: `/clipart/Untitled design (${54 + i}).svg`,
+                name: `Design ${i + 1}`,
+                category: 'designs'
+            }))
+        ];
 
         this.contentElement.innerHTML = `
             <div class="studio-panel-header">
@@ -550,18 +565,45 @@ class StudioPanels {
                 </button>
             </div>
 
+            <div class="studio-clipart-categories">
+                <button class="clipart-category-btn active" data-category="all">All</button>
+                <button class="clipart-category-btn" data-category="graphs">Graphs</button>
+                <button class="clipart-category-btn" data-category="shapes">Shapes</button>
+                <button class="clipart-category-btn" data-category="designs">Designs</button>
+            </div>
+
             <div class="studio-clipart-grid">
                 ${clipartItems.map(item => `
                     <div class="studio-clipart-item draggable-item"
                          draggable="true"
                          data-drag-type="clipart"
                          data-drag-data="${item.src}"
+                         data-category="${item.category}"
                          onclick="studioPanels.addClipart('${item.src}')">
                         <img src="${item.src}" alt="${item.name}" draggable="false">
                     </div>
                 `).join('')}
             </div>
         `;
+
+        // Setup category filter buttons
+        this.contentElement.querySelectorAll('.clipart-category-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update active button
+                this.contentElement.querySelectorAll('.clipart-category-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+
+                // Filter items
+                const category = e.target.dataset.category;
+                this.contentElement.querySelectorAll('.studio-clipart-item').forEach(item => {
+                    if (category === 'all' || item.dataset.category === category) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
     }
 
     addClipart(src) {

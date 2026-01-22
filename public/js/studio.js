@@ -93,8 +93,40 @@ class StudioCanvas {
         // Drawer state
         this.isDrawerOpen = false;
 
-        // Clipart definitions - SVG files from /clipart folder
+        // Clipart definitions - SVG/PNG files from /clipart folder
         this.clipartItems = [
+            // Schemes & Graphs (business/chart graphics)
+            { id: 'graph-1', src: '/clipart/Schemes & Graphs LITE 1.png', name: 'Graph 1' },
+            { id: 'graph-2', src: '/clipart/Schemes & Graphs LITE 2.png', name: 'Graph 2' },
+            { id: 'graph-3', src: '/clipart/Schemes & Graphs LITE 3.png', name: 'Graph 3' },
+            { id: 'graph-4', src: '/clipart/Schemes & Graphs LITE 4.png', name: 'Graph 4' },
+            { id: 'graph-5', src: '/clipart/Schemes & Graphs LITE 5.png', name: 'Graph 5' },
+            { id: 'graph-6', src: '/clipart/Schemes & Graphs LITE 6.png', name: 'Graph 6' },
+            { id: 'graph-7', src: '/clipart/Schemes & Graphs LITE 7.png', name: 'Graph 7' },
+            { id: 'graph-8', src: '/clipart/Schemes & Graphs LITE 8.png', name: 'Graph 8' },
+            { id: 'graph-9', src: '/clipart/Schemes & Graphs LITE 9.png', name: 'Graph 9' },
+            { id: 'graph-10', src: '/clipart/Schemes & Graphs LITE 10.png', name: 'Graph 10' },
+            { id: 'graph-11', src: '/clipart/Schemes & Graphs LITE 11.png', name: 'Graph 11' },
+            { id: 'graph-12', src: '/clipart/Schemes & Graphs LITE 12.png', name: 'Graph 12' },
+            { id: 'graph-13', src: '/clipart/Schemes & Graphs LITE 13.png', name: 'Graph 13' },
+            { id: 'graph-14', src: '/clipart/Schemes & Graphs LITE 14.png', name: 'Graph 14' },
+            { id: 'graph-15', src: '/clipart/Schemes & Graphs LITE 15.png', name: 'Graph 15' },
+            // Geometric shapes
+            { id: 'shape-01', src: '/clipart/shape-01.svg', name: 'Shape 1' },
+            { id: 'shape-02', src: '/clipart/shape-02.svg', name: 'Shape 2' },
+            { id: 'shape-03', src: '/clipart/shape-03.svg', name: 'Shape 3' },
+            { id: 'shape-04', src: '/clipart/shape-04.svg', name: 'Shape 4' },
+            { id: 'shape-05', src: '/clipart/shape-05.svg', name: 'Shape 5' },
+            { id: 'shape-06', src: '/clipart/shape-06.svg', name: 'Shape 6' },
+            { id: 'shape-07', src: '/clipart/shape-07.svg', name: 'Shape 7' },
+            { id: 'shape-08', src: '/clipart/shape-08.svg', name: 'Shape 8' },
+            { id: 'shape-09', src: '/clipart/shape-09.svg', name: 'Shape 9' },
+            { id: 'shape-10', src: '/clipart/shape-10.svg', name: 'Shape 10' },
+            { id: 'shape-11', src: '/clipart/shape-11.svg', name: 'Shape 11' },
+            { id: 'shape-12', src: '/clipart/shape-12.svg', name: 'Shape 12' },
+            { id: 'shape-13', src: '/clipart/shape-13.svg', name: 'Shape 13' },
+            { id: 'shape-14', src: '/clipart/shape-14.svg', name: 'Shape 14' },
+            // Design illustrations
             { id: '54', src: '/clipart/Untitled design (54).svg', name: 'Design 1' },
             { id: '55', src: '/clipart/Untitled design (55).svg', name: 'Design 2' },
             { id: '56', src: '/clipart/Untitled design (56).svg', name: 'Design 3' },

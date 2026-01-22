@@ -29,20 +29,20 @@ class FaceEffects {
         // Glasses settings
         // positionType: 'eyes' = positioned at eye level, 'head' = positioned on forehead/top of head
         this.glassesOptions = [
-            { name: 'Red Glasses', path: 'vtube/Red.png', img: null, positionType: 'eyes' },
-            { name: 'Deer Antlers 1', path: 'vtube/Deer 1.png', img: null, positionType: 'eyes' },
-            { name: 'Deer Antlers 2', path: 'vtube/Deer 2.png', img: null, positionType: 'eyes' },
-            { name: 'Santa Hat 1', path: 'vtube/SantaHat1.png', img: null, positionType: 'head' },
-            { name: 'Santa Hat 2', path: 'vtube/SantaHat2.png', img: null, positionType: 'head' },
-            { name: 'Dwarf Hat', path: 'vtube/DwarfHat.png', img: null, positionType: 'head' },
-            { name: 'Xmas Hat 1', path: 'vtube/xmass hat 1.png', img: null, positionType: 'head' },
-            { name: 'Xmas Hat 2', path: 'vtube/xmass hat 2.png', img: null, positionType: 'head' },
-            { name: 'Xmas Hat 3', path: 'vtube/xmass hat 3.png', img: null, positionType: 'head' },
-            { name: 'Xmas Hat 4', path: 'vtube/xmass hat 4.png', img: null, positionType: 'head' },
-            { name: 'Tree 1', path: 'vtube/Tree1.png', img: null, positionType: 'head' },
-            { name: 'Tree 2', path: 'vtube/Tree2.png', img: null, positionType: 'head' },
-            { name: 'Snowman', path: 'vtube/Snowman.png', img: null, positionType: 'head' },
-            { name: 'Gingerbread', path: 'vtube/GingerBread.png', img: null, positionType: 'head' }
+            { name: 'Red Glasses', path: '/vtube/Red.png', img: null, positionType: 'eyes' },
+            { name: 'Deer Antlers 1', path: '/vtube/Deer 1.png', img: null, positionType: 'eyes' },
+            { name: 'Deer Antlers 2', path: '/vtube/Deer 2.png', img: null, positionType: 'eyes' },
+            { name: 'Santa Hat 1', path: '/vtube/SantaHat1.png', img: null, positionType: 'head' },
+            { name: 'Santa Hat 2', path: '/vtube/SantaHat2.png', img: null, positionType: 'head' },
+            { name: 'Dwarf Hat', path: '/vtube/DwarfHat.png', img: null, positionType: 'head' },
+            { name: 'Xmas Hat 1', path: '/vtube/xmass hat 1.png', img: null, positionType: 'head' },
+            { name: 'Xmas Hat 2', path: '/vtube/xmass hat 2.png', img: null, positionType: 'head' },
+            { name: 'Xmas Hat 3', path: '/vtube/xmass hat 3.png', img: null, positionType: 'head' },
+            { name: 'Xmas Hat 4', path: '/vtube/xmass hat 4.png', img: null, positionType: 'head' },
+            { name: 'Tree 1', path: '/vtube/Tree1.png', img: null, positionType: 'head' },
+            { name: 'Tree 2', path: '/vtube/Tree2.png', img: null, positionType: 'head' },
+            { name: 'Snowman', path: '/vtube/Snowman.png', img: null, positionType: 'head' },
+            { name: 'Gingerbread', path: '/vtube/GingerBread.png', img: null, positionType: 'head' }
         ];
         this.selectedGlasses = 0;
         this.positionOffset = 0; // Vertical offset for calibration
@@ -53,6 +53,13 @@ class FaceEffects {
 
         // Animation frame
         this.animationId = null;
+
+        // Smile detection state
+        this.isSmiling = false;
+        this.smileThreshold = 0.35; // Mouth width/height ratio threshold for smile
+        this.smileHysteresis = 0.05; // Prevent flickering
+        this.smileDebounceTime = 200; // ms to hold smile state
+        this.lastSmileChange = 0;
 
         this.init();
     }
@@ -177,6 +184,14 @@ class FaceEffects {
 
     async initFaceMesh() {
         try {
+            // Check if FaceMesh is available
+            if (typeof FaceMesh === 'undefined') {
+                console.error('FaceMesh not loaded - MediaPipe library may not have loaded');
+                // Retry after a delay
+                setTimeout(() => this.initFaceMesh(), 1000);
+                return;
+            }
+
             this.faceMesh = new FaceMesh({
                 locateFile: (file) => {
                     return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
@@ -193,12 +208,14 @@ class FaceEffects {
             this.faceMesh.onResults((results) => this.onResults(results));
 
             this.isInitialized = true;
-            console.log('MediaPipe Face Mesh initialized');
+            console.log('MediaPipe Face Mesh initialized successfully');
 
             // Start processing
             this.startProcessing();
         } catch (error) {
             console.error('Error initializing Face Mesh:', error);
+            // Retry after a delay
+            setTimeout(() => this.initFaceMesh(), 2000);
         }
     }
 
@@ -225,11 +242,15 @@ class FaceEffects {
 
     async startProcessing() {
         const processFrame = async () => {
-            if (this.video && this.video.readyState >= 2) {
-                await this.faceMesh.send({ image: this.video });
-                if (this.activeEffects.background && this.selfieSegmentation) {
-                    await this.selfieSegmentation.send({ image: this.video });
+            try {
+                if (this.video && this.video.readyState >= 2 && this.faceMesh) {
+                    await this.faceMesh.send({ image: this.video });
+                    if (this.activeEffects.background && this.selfieSegmentation) {
+                        await this.selfieSegmentation.send({ image: this.video });
+                    }
                 }
+            } catch (error) {
+                console.error('Error processing frame:', error);
             }
 
             if (this.isInitialized) {
@@ -237,6 +258,7 @@ class FaceEffects {
             }
         };
 
+        console.log('Starting face processing loop...');
         processFrame();
     }
 
@@ -250,7 +272,111 @@ class FaceEffects {
 
     onResults(results) {
         this.faceLandmarks = results.multiFaceLandmarks;
+
+        // Detect smile from face landmarks
+        if (this.faceLandmarks && this.faceLandmarks.length > 0) {
+            const isSmiling = this.detectSmile(this.faceLandmarks[0]);
+            this.updateSmileState(isSmiling);
+        }
+
         this.render();
+    }
+
+    // Detect smile using mouth landmarks
+    // Mouth corner landmarks: 61 (left), 291 (right)
+    // Upper/lower lip: 13 (top center), 14 (bottom center)
+    // Mouth opening: 78 (inner upper), 308 (inner lower)
+    detectSmile(landmarks) {
+        if (!landmarks) return false;
+
+        // Get mouth landmarks
+        const leftCorner = landmarks[61];
+        const rightCorner = landmarks[291];
+        const upperLip = landmarks[13];
+        const lowerLip = landmarks[14];
+
+        // Calculate mouth width (corner to corner)
+        const mouthWidth = Math.sqrt(
+            Math.pow(rightCorner.x - leftCorner.x, 2) +
+            Math.pow(rightCorner.y - leftCorner.y, 2)
+        );
+
+        // Calculate mouth height (lip to lip)
+        const mouthHeight = Math.sqrt(
+            Math.pow(lowerLip.x - upperLip.x, 2) +
+            Math.pow(lowerLip.y - upperLip.y, 2)
+        );
+
+        // Calculate nose tip to chin for face size normalization
+        const noseTip = landmarks[1];
+        const chin = landmarks[152];
+        const faceHeight = Math.sqrt(
+            Math.pow(chin.x - noseTip.x, 2) +
+            Math.pow(chin.y - noseTip.y, 2)
+        );
+
+        // Normalized mouth width ratio (wider when smiling)
+        const mouthWidthRatio = mouthWidth / faceHeight;
+
+        // Check if corners are lifted (compare y position of corners vs center)
+        const centerY = (upperLip.y + lowerLip.y) / 2;
+        const cornerAvgY = (leftCorner.y + rightCorner.y) / 2;
+        const cornerLift = centerY - cornerAvgY; // Positive when corners lifted
+
+        // Smile detection: wide mouth + lifted corners
+        // Apply hysteresis to prevent flickering
+        const threshold = this.isSmiling
+            ? (this.smileThreshold - this.smileHysteresis)
+            : (this.smileThreshold + this.smileHysteresis);
+
+        return (mouthWidthRatio > threshold && cornerLift > 0.01);
+    }
+
+    // Update smile state with debouncing
+    updateSmileState(isSmiling) {
+        const now = Date.now();
+
+        // Only change state after debounce period
+        if (isSmiling !== this.isSmiling) {
+            if (now - this.lastSmileChange > this.smileDebounceTime) {
+                this.isSmiling = isSmiling;
+                this.lastSmileChange = now;
+
+                // Notify SFU connection manager for physics
+                if (window.sfuConnectionManager && window.connectionManager) {
+                    const participantId = window.sfuConnectionManager.localParticipant?.identity;
+                    if (participantId) {
+                        window.sfuConnectionManager.updateSmileStatus(participantId, isSmiling);
+
+                        // Broadcast to other users
+                        this.broadcastSmileStatus(isSmiling);
+                    }
+                }
+
+                // Visual feedback on local video when smiling
+                const videoFrame = document.querySelector('.video-frame');
+                if (videoFrame) {
+                    if (isSmiling) {
+                        videoFrame.classList.add('smiling');
+                    } else {
+                        videoFrame.classList.remove('smiling');
+                    }
+                }
+
+                console.log('[Effects] Smile detected:', isSmiling);
+            }
+        }
+    }
+
+    // Broadcast smile status to other users
+    broadcastSmileStatus(isSmiling) {
+        const socket = window.connectionManager?.socket;
+        if (socket) {
+            socket.emit('smile-status', {
+                isSmiling: isSmiling,
+                participantId: window.sfuConnectionManager?.localParticipant?.identity
+            });
+        }
     }
 
     render() {

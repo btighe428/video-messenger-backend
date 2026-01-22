@@ -5,7 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
-const mediasoup = require('mediasoup');
+const { AccessToken } = require('livekit-server-sdk');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,164 +13,38 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
-// ==================== MEDIASOUP CONFIGURATION ====================
+// ==================== LIVEKIT CONFIGURATION ====================
+// LiveKit Cloud credentials - set these environment variables:
+// LIVEKIT_API_KEY - Your LiveKit API key
+// LIVEKIT_API_SECRET - Your LiveKit API secret
+// LIVEKIT_URL - Your LiveKit WebSocket URL (e.g., wss://your-app.livekit.cloud)
 
-const mediaCodecs = [
-    {
-        kind: 'audio',
-        mimeType: 'audio/opus',
-        clockRate: 48000,
-        channels: 2,
-    },
-    {
-        kind: 'video',
-        mimeType: 'video/VP8',
-        clockRate: 90000,
-        parameters: {
-            'x-google-start-bitrate': 1000,
-        },
-    },
-    {
-        kind: 'video',
-        mimeType: 'video/VP9',
-        clockRate: 90000,
-        parameters: {
-            'profile-id': 2,
-            'x-google-start-bitrate': 1000,
-        },
-    },
-    {
-        kind: 'video',
-        mimeType: 'video/H264',
-        clockRate: 90000,
-        parameters: {
-            'packetization-mode': 1,
-            'profile-level-id': '42e01f',
-            'level-asymmetry-allowed': 1,
-            'x-google-start-bitrate': 1000,
-        },
-    },
-];
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY;
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
+const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
-const workerSettings = {
-    logLevel: 'warn',
-    logTags: ['info', 'ice', 'dtls', 'rtp', 'srtp', 'rtcp'],
-    rtcMinPort: parseInt(process.env.MEDIASOUP_MIN_PORT) || 10000,
-    rtcMaxPort: parseInt(process.env.MEDIASOUP_MAX_PORT) || 10100,
-};
-
-// Get announced IP from env or try to auto-detect from hostname
-const getAnnouncedIp = () => {
-    if (process.env.ANNOUNCED_IP) {
-        return process.env.ANNOUNCED_IP;
+// Generate LiveKit access token for a participant
+async function generateLiveKitToken(roomName, participantName, participantId) {
+    if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+        console.error('[LiveKit] API credentials not configured');
+        return null;
     }
-    // Fallback: use Fly.io hostname if available
-    if (process.env.FLY_APP_NAME) {
-        const flyHost = `${process.env.FLY_APP_NAME}.fly.dev`;
-        console.log(`[mediasoup] Using Fly.io hostname: ${flyHost}`);
-        return flyHost;
-    }
-    // Fallback: use Render's hostname if available
-    if (process.env.RENDER_EXTERNAL_HOSTNAME) {
-        console.log(`[mediasoup] Using RENDER_EXTERNAL_HOSTNAME: ${process.env.RENDER_EXTERNAL_HOSTNAME}`);
-        return process.env.RENDER_EXTERNAL_HOSTNAME;
-    }
-    console.warn('[mediasoup] WARNING: ANNOUNCED_IP not set. NAT traversal may fail for some clients.');
-    return null;
-};
 
-const webRtcTransportOptions = {
-    listenIps: [
-        {
-            ip: '0.0.0.0',
-            announcedIp: getAnnouncedIp(),
-        },
-    ],
-    initialAvailableOutgoingBitrate: 1000000,
-    minimumAvailableOutgoingBitrate: 600000,
-    maxSctpMessageSize: 262144,
-    maxIncomingBitrate: 1500000,
-    enableUdp: true,
-    enableTcp: true,
-    preferUdp: true,
-};
-
-// ==================== MEDIASOUP STATE ====================
-
-let mediasoupWorker = null;
-let mediasoupRouter = null;
-const peers = new Map(); // socketId -> { transports, producers, consumers }
-
-// ==================== MEDIASOUP INITIALIZATION ====================
-
-async function createWorker() {
-    const worker = await mediasoup.createWorker(workerSettings);
-
-    worker.on('died', () => {
-        console.error('mediasoup Worker died, exiting...');
-        process.exit(1);
+    const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+        identity: participantId,
+        name: participantName,
     });
 
-    console.log(`mediasoup Worker created [pid:${worker.pid}]`);
-    return worker;
-}
+    // Grant permissions for the room
+    token.addGrant({
+        room: roomName,
+        roomJoin: true,
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true,
+    });
 
-async function createRouter(worker) {
-    const router = await worker.createRouter({ mediaCodecs });
-    console.log(`mediasoup Router created [id:${router.id}]`);
-    return router;
-}
-
-async function initializeMediasoup() {
-    try {
-        mediasoupWorker = await createWorker();
-        mediasoupRouter = await createRouter(mediasoupWorker);
-        console.log('mediasoup initialized successfully');
-    } catch (error) {
-        console.error('Failed to initialize mediasoup:', error);
-        // Continue without mediasoup - fall back to P2P
-    }
-}
-
-// ==================== PEER MANAGEMENT ====================
-
-function createPeer(socketId) {
-    return {
-        socketId,
-        transports: new Map(),  // transportId -> Transport
-        producers: new Map(),   // producerId -> Producer
-        consumers: new Map(),   // consumerId -> Consumer
-    };
-}
-
-function getPeer(socketId) {
-    if (!peers.has(socketId)) {
-        peers.set(socketId, createPeer(socketId));
-    }
-    return peers.get(socketId);
-}
-
-function cleanupPeer(socketId) {
-    const peer = peers.get(socketId);
-    if (!peer) return;
-
-    // Close all consumers
-    for (const consumer of peer.consumers.values()) {
-        consumer.close();
-    }
-
-    // Close all producers
-    for (const producer of peer.producers.values()) {
-        producer.close();
-    }
-
-    // Close all transports
-    for (const transport of peer.transports.values()) {
-        transport.close();
-    }
-
-    peers.delete(socketId);
-    console.log(`Cleaned up peer resources for ${socketId}`);
+    return await token.toJwt();
 }
 
 const io = new Server(server, {
@@ -246,9 +120,59 @@ const upload = multer({
 
 // Routes
 
+// Health check endpoint (shows LiveKit status)
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        node: process.version,
+        livekit: {
+            configured: !!(LIVEKIT_API_KEY && LIVEKIT_API_SECRET && LIVEKIT_URL),
+            url: LIVEKIT_URL || 'NOT SET',
+            apiKeySet: !!LIVEKIT_API_KEY,
+            apiSecretSet: !!LIVEKIT_API_SECRET,
+        },
+        connectedUsers: connectedUsers.size,
+    });
+});
+
 // Home route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// LiveKit token endpoint (REST API alternative to socket)
+app.get('/api/livekit-token', async (req, res) => {
+    const { room, username, identity } = req.query;
+
+    if (!room || !username || !identity) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing required parameters: room, username, identity'
+        });
+    }
+
+    if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+        return res.status(503).json({
+            success: false,
+            message: 'LiveKit not configured on server'
+        });
+    }
+
+    try {
+        const token = await generateLiveKitToken(room, username, identity);
+        res.json({
+            success: true,
+            token,
+            url: LIVEKIT_URL,
+        });
+    } catch (error) {
+        console.error('[LiveKit] Token generation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate token',
+            error: error.message
+        });
+    }
 });
 
 // Upload endpoint
@@ -377,6 +301,12 @@ app.use((req, res) => {
 const PASSWORD = 'Yahoo';
 let connectedUsers = new Map(); // socketId -> userInfo
 
+// ==================== VIDEO CIRCLE POSITION STATE ====================
+// Shared Reality: All users see same circle positions
+const videoPositions = new Map(); // participantId -> { x, y, timestamp, movedBy }
+let currentFormation = 'cluster'; // 'cluster' | 'audience' | 'stack' | 'scatter'
+let formationPresenterId = null;  // For audience mode
+
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
@@ -411,7 +341,7 @@ io.on('connection', (socket) => {
         console.log(`User joined: ${connectedUsers.get(socket.id).username} (${socket.id})`);
     });
 
-    // WebRTC signaling
+    // WebRTC signaling (P2P fallback)
     socket.on('offer', (data) => {
         const { offer, to } = data;
         io.to(to).emit('offer', {
@@ -438,184 +368,41 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ==================== MEDIASOUP SIGNALING EVENTS ====================
+    // ==================== LIVEKIT TOKEN REQUEST ====================
 
-    // Get router RTP capabilities
-    socket.on('getRouterRtpCapabilities', (callback) => {
-        if (!mediasoupRouter) {
-            callback({ error: 'mediasoup not initialized' });
+    // Client requests LiveKit token to join a room
+    socket.on('getLiveKitToken', async (data, callback) => {
+        const { roomName } = data;
+        const user = connectedUsers.get(socket.id);
+
+        if (!user) {
+            callback({ error: 'Not logged in' });
             return;
         }
-        callback({ rtpCapabilities: mediasoupRouter.rtpCapabilities });
-    });
 
-    // Create WebRTC transport
-    socket.on('createWebRtcTransport', async (data, callback) => {
-        if (!mediasoupRouter) {
-            callback({ error: 'mediasoup not initialized' });
+        if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+            callback({ error: 'LiveKit not configured' });
             return;
         }
 
         try {
-            const transport = await mediasoupRouter.createWebRtcTransport(webRtcTransportOptions);
-            const peer = getPeer(socket.id);
-            peer.transports.set(transport.id, transport);
-
-            transport.on('dtlsstatechange', (dtlsState) => {
-                if (dtlsState === 'closed') {
-                    transport.close();
-                    peer.transports.delete(transport.id);
-                }
-            });
+            const token = await generateLiveKitToken(
+                roomName || 'video-messenger-room',
+                user.username,
+                socket.id
+            );
 
             callback({
-                id: transport.id,
-                iceParameters: transport.iceParameters,
-                iceCandidates: transport.iceCandidates,
-                dtlsParameters: transport.dtlsParameters,
+                token,
+                url: LIVEKIT_URL,
+                roomName: roomName || 'video-messenger-room',
             });
 
-            console.log(`Transport created for ${socket.id}: ${transport.id}`);
+            console.log(`[LiveKit] Token generated for ${user.username} (${socket.id})`);
         } catch (error) {
-            console.error('createWebRtcTransport error:', error);
+            console.error('[LiveKit] Token generation error:', error);
             callback({ error: error.message });
         }
-    });
-
-    // Connect transport (DTLS handshake)
-    socket.on('connectWebRtcTransport', async (data, callback) => {
-        const { transportId, dtlsParameters } = data;
-        const peer = getPeer(socket.id);
-        const transport = peer.transports.get(transportId);
-
-        if (!transport) {
-            callback({ error: 'Transport not found' });
-            return;
-        }
-
-        try {
-            await transport.connect({ dtlsParameters });
-            callback({ success: true });
-            console.log(`Transport connected for ${socket.id}: ${transportId}`);
-        } catch (error) {
-            console.error('connectWebRtcTransport error:', error);
-            callback({ error: error.message });
-        }
-    });
-
-    // Produce (client sends media)
-    socket.on('produce', async (data, callback) => {
-        const { transportId, kind, rtpParameters } = data;
-        const peer = getPeer(socket.id);
-        const transport = peer.transports.get(transportId);
-
-        if (!transport) {
-            callback({ error: 'Transport not found' });
-            return;
-        }
-
-        try {
-            const producer = await transport.produce({ kind, rtpParameters });
-            peer.producers.set(producer.id, producer);
-
-            producer.on('transportclose', () => {
-                producer.close();
-                peer.producers.delete(producer.id);
-            });
-
-            // Notify all other peers about this new producer
-            const user = connectedUsers.get(socket.id);
-            socket.broadcast.emit('newProducer', {
-                producerId: producer.id,
-                peerId: socket.id,
-                peerName: user?.username || 'Guest',
-                kind: kind,
-            });
-
-            callback({ producerId: producer.id });
-            console.log(`Producer created for ${socket.id}: ${producer.id} (${kind})`);
-        } catch (error) {
-            console.error('produce error:', error);
-            callback({ error: error.message });
-        }
-    });
-
-    // Consume (client receives media)
-    socket.on('consume', async (data, callback) => {
-        const { producerId, rtpCapabilities } = data;
-        const peer = getPeer(socket.id);
-
-        if (!mediasoupRouter.canConsume({ producerId, rtpCapabilities })) {
-            callback({ error: 'Cannot consume' });
-            return;
-        }
-
-        // Find a receive transport for this peer
-        let recvTransport = null;
-        for (const transport of peer.transports.values()) {
-            // Use the second transport created (recv transport)
-            if (!transport.appData?.producing) {
-                recvTransport = transport;
-                break;
-            }
-        }
-
-        if (!recvTransport) {
-            callback({ error: 'No receive transport found' });
-            return;
-        }
-
-        try {
-            const consumer = await recvTransport.consume({
-                producerId,
-                rtpCapabilities,
-                paused: false,
-            });
-
-            peer.consumers.set(consumer.id, consumer);
-
-            consumer.on('transportclose', () => {
-                consumer.close();
-                peer.consumers.delete(consumer.id);
-            });
-
-            consumer.on('producerclose', () => {
-                socket.emit('consumerClosed', { consumerId: consumer.id });
-                consumer.close();
-                peer.consumers.delete(consumer.id);
-            });
-
-            callback({
-                consumerId: consumer.id,
-                producerId: producerId,
-                kind: consumer.kind,
-                rtpParameters: consumer.rtpParameters,
-            });
-
-            console.log(`Consumer created for ${socket.id}: ${consumer.id}`);
-        } catch (error) {
-            console.error('consume error:', error);
-            callback({ error: error.message });
-        }
-    });
-
-    // Get all existing producers (for new joiners)
-    socket.on('getProducers', (callback) => {
-        const producerList = [];
-        for (const [peerId, peer] of peers) {
-            if (peerId !== socket.id) {
-                const user = connectedUsers.get(peerId);
-                for (const [producerId, producer] of peer.producers) {
-                    producerList.push({
-                        producerId,
-                        peerId,
-                        peerName: user?.username || 'Guest',
-                        kind: producer.kind,
-                    });
-                }
-            }
-        }
-        callback({ producers: producerList });
     });
 
     // Handle video message sending
@@ -657,6 +444,112 @@ io.on('connection', (socket) => {
         });
 
         console.log(`Stickers updated from ${socket.id}: ${stickers.length} stickers`);
+    });
+
+    // Handle emoji tags on video circles
+    socket.on('emoji-tag', (data) => {
+        const { targetId, emoji, fromUser } = data;
+
+        // Broadcast to ALL users (including sender for consistency)
+        io.emit('emoji-tag', {
+            targetId: targetId,
+            emoji: emoji,
+            fromUser: fromUser,
+            fromSocketId: socket.id
+        });
+
+        console.log(`Emoji tag from ${fromUser}: ${emoji} on ${targetId}`);
+    });
+
+    // Handle smile status for physics attraction
+    socket.on('smile-status', (data) => {
+        const { isSmiling, participantId } = data;
+
+        // Broadcast smile status to all OTHER users
+        socket.broadcast.emit('smile-status', {
+            participantId: participantId,
+            isSmiling: isSmiling
+        });
+
+        console.log(`Smile status: ${participantId} is ${isSmiling ? 'smiling 😊' : 'not smiling'}`);
+    });
+
+    // ==================== VIDEO CIRCLE POSITION SYNC ====================
+    // Shared Reality: When User A moves a circle, all users see it move
+
+    // Handle position update from a user
+    socket.on('video-position-update', (data) => {
+        const { participantId, x, y, timestamp, movedBy } = data;
+
+        // Store position in server state
+        videoPositions.set(participantId, {
+            x: x,
+            y: y,
+            timestamp: timestamp || Date.now(),
+            movedBy: movedBy || socket.id
+        });
+
+        // Broadcast to all OTHER users
+        socket.broadcast.emit('video-position-update', {
+            participantId: participantId,
+            x: x,
+            y: y,
+            timestamp: timestamp,
+            movedBy: movedBy || socket.id
+        });
+
+        console.log(`Video position: ${participantId} moved to (${Math.round(x)}, ${Math.round(y)}) by ${movedBy}`);
+    });
+
+    // Handle request for full position sync (new user joining)
+    socket.on('video-position-sync-request', () => {
+        // Convert Map to plain object for transmission
+        const positionsObj = {};
+        videoPositions.forEach((pos, id) => {
+            positionsObj[id] = pos;
+        });
+
+        // Send current state to requesting user (use socket.id directly for reliability)
+        socket.emit('video-position-sync', {
+            positions: positionsObj,
+            formation: currentFormation,
+            presenterId: formationPresenterId
+        });
+
+        console.log(`Position sync sent to ${socket.id}: ${videoPositions.size} positions`);
+    });
+
+    // Handle formation mode change
+    socket.on('video-formation-change', (data) => {
+        const { formation, presenterId, targetPositions } = data;
+        const user = connectedUsers.get(socket.id);
+
+        // Update server state
+        currentFormation = formation;
+        formationPresenterId = presenterId || null;
+
+        // If target positions provided, update all positions
+        if (targetPositions) {
+            Object.entries(targetPositions).forEach(([participantId, pos]) => {
+                videoPositions.set(participantId, {
+                    x: pos.x,
+                    y: pos.y,
+                    scale: pos.scale,
+                    timestamp: Date.now(),
+                    movedBy: socket.id
+                });
+            });
+        }
+
+        // Broadcast to ALL users (including sender for consistency)
+        io.emit('video-formation-change', {
+            formation: formation,
+            presenterId: presenterId,
+            targetPositions: targetPositions,
+            changedBy: user?.username || socket.id
+        });
+
+        console.log(`Formation changed to '${formation}' by ${user?.username || socket.id}`);
     });
 
     // ==================== STUDIO MODE EVENTS ====================
@@ -763,7 +656,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ==================== NEW: Fabric.js Studio Events ====================
+    // ==================== Fabric.js Studio Events ====================
 
     // Real-time emoji reactions
     socket.on('studio-reaction', (data) => {
@@ -856,40 +749,26 @@ io.on('connection', (socket) => {
         if (user) {
             console.log(`User disconnected: ${user.username} (${socket.id})`);
             connectedUsers.delete(socket.id);
+
+            // Clean up video position for this user
+            videoPositions.delete(socket.id);
+
             socket.broadcast.emit('user-left', { socketId: socket.id });
-
-            // Cleanup mediasoup resources
-            cleanupPeer(socket.id);
-
-            // Notify others about closed producers
-            const peer = peers.get(socket.id);
-            if (peer) {
-                for (const producerId of peer.producers.keys()) {
-                    socket.broadcast.emit('producerClosed', { producerId });
-                }
-            }
         }
     });
 });
 
-// Start server with mediasoup initialization
-async function startServer() {
-    // Initialize mediasoup
-    await initializeMediasoup();
-
-    server.listen(PORT, () => {
-        console.log(`\n🎥 Video Messenger Server`);
-        console.log(`================================`);
-        console.log(`Server running on: http://localhost:${PORT}`);
-        console.log(`Upload endpoint: http://localhost:${PORT}/upload`);
-        console.log(`Uploads folder: ${uploadsDir}`);
-        console.log(`WebSocket: Enabled`);
-        console.log(`mediasoup: ${mediasoupRouter ? 'Enabled' : 'Disabled'}`);
-        console.log(`================================\n`);
-    });
-}
-
-startServer().catch(console.error);
+// Start server
+server.listen(PORT, () => {
+    console.log(`\n🎥 Video Messenger Server`);
+    console.log(`================================`);
+    console.log(`Server running on: http://localhost:${PORT}`);
+    console.log(`Upload endpoint: http://localhost:${PORT}/upload`);
+    console.log(`Uploads folder: ${uploadsDir}`);
+    console.log(`WebSocket: Enabled`);
+    console.log(`LiveKit: ${LIVEKIT_API_KEY ? 'Configured' : 'Not configured (set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL)'}`);
+    console.log(`================================\n`);
+});
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

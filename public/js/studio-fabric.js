@@ -303,6 +303,9 @@ class StudioFabric {
             this.canvas.setViewportTransform(vpt);
             this.canvas.renderAll();
         }
+
+        // Emit viewport change for video circle canvas pinning
+        this.emitViewportChange();
     }
 
     // ==================== TOOL SWITCHING ====================
@@ -455,28 +458,92 @@ class StudioFabric {
 
     addImage(url, x, y) {
         return new Promise((resolve, reject) => {
-            fabric.Image.fromURL(url, (img) => {
-                if (!img) {
-                    reject(new Error('Failed to load image'));
-                    return;
-                }
+            // Check if it's a GIF - needs special handling for animation
+            const isGif = url.toLowerCase().includes('.gif') || url.toLowerCase().includes('giphy');
 
-                // Scale to reasonable size
-                const maxSize = 300;
-                const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+            if (isGif) {
+                // For GIFs: create HTML img element to preserve animation
+                const imgElement = document.createElement('img');
+                imgElement.crossOrigin = 'anonymous';
+                imgElement.src = url;
 
-                img.set({
-                    left: x || this.canvas.width / 2,
-                    top: y || this.canvas.height / 2,
-                    scaleX: scale,
-                    scaleY: scale,
-                    originX: 'center',
-                    originY: 'center'
-                });
+                imgElement.onload = () => {
+                    const fabricImg = new fabric.Image(imgElement, {
+                        left: x || this.canvas.width / 2,
+                        top: y || this.canvas.height / 2,
+                        originX: 'center',
+                        originY: 'center',
+                        objectCaching: false // Required for GIF animation
+                    });
 
-                resolve(this.addObject(img));
-            }, { crossOrigin: 'anonymous' });
+                    // Scale to reasonable size
+                    const maxSize = 300;
+                    const scale = Math.min(maxSize / fabricImg.width, maxSize / fabricImg.height, 1);
+                    fabricImg.scaleX = scale;
+                    fabricImg.scaleY = scale;
+
+                    // Mark as animated GIF for render loop
+                    fabricImg.isAnimatedGif = true;
+
+                    resolve(this.addObject(fabricImg));
+
+                    // Start animation render loop if not already running
+                    this.startGifAnimationLoop();
+                };
+
+                imgElement.onerror = () => {
+                    reject(new Error('Failed to load GIF'));
+                };
+            } else {
+                // Regular images: use standard fromURL
+                fabric.Image.fromURL(url, (img) => {
+                    if (!img) {
+                        reject(new Error('Failed to load image'));
+                        return;
+                    }
+
+                    // Scale to reasonable size
+                    const maxSize = 300;
+                    const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+
+                    img.set({
+                        left: x || this.canvas.width / 2,
+                        top: y || this.canvas.height / 2,
+                        scaleX: scale,
+                        scaleY: scale,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+
+                    resolve(this.addObject(img));
+                }, { crossOrigin: 'anonymous' });
+            }
         });
+    }
+
+    // Animation loop for GIFs - re-renders canvas to show GIF frames
+    startGifAnimationLoop() {
+        if (this.gifAnimationRunning) return;
+        this.gifAnimationRunning = true;
+
+        const animate = () => {
+            if (!this.canvas) {
+                this.gifAnimationRunning = false;
+                return;
+            }
+
+            // Check if any animated GIFs exist on canvas
+            const hasAnimatedGifs = this.canvas.getObjects().some(obj => obj.isAnimatedGif);
+
+            if (hasAnimatedGifs) {
+                this.canvas.requestRenderAll();
+                requestAnimationFrame(animate);
+            } else {
+                this.gifAnimationRunning = false;
+            }
+        };
+
+        requestAnimationFrame(animate);
     }
 
     // ==================== CAMERA SNAPSHOT (CIRCULAR) ====================
@@ -489,6 +556,98 @@ class StudioFabric {
             return;
         }
 
+        // Start countdown then capture
+        this.showCountdownAndCapture(video);
+    }
+
+    // Show 3, 2, 1 countdown then flash and capture
+    showCountdownAndCapture(video) {
+        // Create countdown overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'selfie-countdown-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            pointer-events: none;
+        `;
+
+        const countdownText = document.createElement('div');
+        countdownText.style.cssText = `
+            font-size: 200px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            animation: countdown-pulse 0.5s ease-out;
+        `;
+
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes countdown-pulse {
+                0% { transform: scale(1.5); opacity: 0; }
+                50% { transform: scale(1); opacity: 1; }
+                100% { transform: scale(0.9); opacity: 0.8; }
+            }
+            @keyframes flash {
+                0% { opacity: 0; }
+                50% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        overlay.appendChild(countdownText);
+        document.body.appendChild(overlay);
+
+        // Countdown sequence
+        let count = 3;
+        countdownText.textContent = count;
+
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownText.textContent = count;
+                // Re-trigger animation
+                countdownText.style.animation = 'none';
+                countdownText.offsetHeight; // Force reflow
+                countdownText.style.animation = 'countdown-pulse 0.5s ease-out';
+            } else {
+                clearInterval(countdownInterval);
+                // Flash and capture
+                this.flashAndCapture(video, overlay, style);
+            }
+        }, 800);
+    }
+
+    // Flash screen white and capture the photo
+    flashAndCapture(video, overlay, styleElement) {
+        // Change overlay to white flash
+        overlay.style.background = 'white';
+        overlay.style.animation = 'flash 0.3s ease-out';
+        overlay.querySelector('div').style.display = 'none';
+
+        // Capture after brief delay (at peak of flash)
+        setTimeout(() => {
+            this.captureSnapshot(video);
+
+            // Remove overlay and style
+            setTimeout(() => {
+                overlay.remove();
+                styleElement.remove();
+            }, 200);
+        }, 100);
+    }
+
+    // Actually capture the snapshot
+    captureSnapshot(video) {
         // Create a temporary canvas to capture the frame
         const tempCanvas = document.createElement('canvas');
         const size = Math.min(video.videoWidth, video.videoHeight);
@@ -519,11 +678,11 @@ class StudioFabric {
         // Draw the image inside the circular clip
         circleCtx.drawImage(tempCanvas, 0, 0);
 
-        // Add border
-        circleCtx.strokeStyle = '#7d2eff';
-        circleCtx.lineWidth = 8;
+        // Add subtle white border
+        circleCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        circleCtx.lineWidth = 4;
         circleCtx.beginPath();
-        circleCtx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+        circleCtx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
         circleCtx.stroke();
 
         // Convert to data URL and add to canvas
@@ -1177,6 +1336,7 @@ class StudioFabric {
         this.canvas.setZoom(zoom);
         this.currentZoom = zoom;
         this.updateZoomDisplay();
+        this.emitViewportChange();
     }
 
     zoomOut() {
@@ -1185,6 +1345,7 @@ class StudioFabric {
         this.canvas.setZoom(zoom);
         this.currentZoom = zoom;
         this.updateZoomDisplay();
+        this.emitViewportChange();
     }
 
     resetZoom() {
@@ -1192,6 +1353,7 @@ class StudioFabric {
         this.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
         this.currentZoom = 1;
         this.updateZoomDisplay();
+        this.emitViewportChange();
     }
 
     updateZoomDisplay() {
@@ -1199,6 +1361,30 @@ class StudioFabric {
         if (display) {
             display.textContent = Math.round(this.currentZoom * 100) + '%';
         }
+    }
+
+    // ==================== VIEWPORT CHANGE EVENT ====================
+    // Emit viewport transform changes for external consumers (video circles)
+
+    emitViewportChange() {
+        if (!this.canvas) return;
+
+        const vpt = this.canvas.viewportTransform;
+        console.log('[StudioFabric] Emitting viewport change:', {
+            zoom: this.currentZoom,
+            translateX: vpt[4],
+            translateY: vpt[5]
+        });
+
+        window.dispatchEvent(new CustomEvent('canvas-viewport-change', {
+            detail: {
+                transform: vpt,
+                zoom: this.currentZoom,
+                // Include center point for position calculations
+                centerX: this.canvas.width / 2,
+                centerY: this.canvas.height / 2
+            }
+        }));
     }
 
     // ==================== CURSOR OVERLAY ====================
@@ -1568,6 +1754,9 @@ class StudioFabric {
             this.resizeCanvas();
             this.saveState();
             this.updateZoomDisplay();
+
+            // Emit initial viewport change for video circle canvas pinning
+            this.emitViewportChange();
 
             // Join studio mode on server (required for sync)
             this.joinStudioWithRetry();
