@@ -780,6 +780,9 @@ class SFUConnectionManager {
             return;
         }
 
+        // Show honeycomb container
+        this.showHoneycomb();
+
         // Calculate positions
         const positions = this.calculateHoneycombPositions(participants.length);
 
